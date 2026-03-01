@@ -29,7 +29,7 @@ export default function ClientsPanel() {
     }, [unitId]);
 
     const filtered = clients.filter(c => {
-        const matchSearch = !search || c.client_name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search);
+        const matchSearch = !search || (c.name || c.client_name)?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search);
         const matchStatus = statusFilter === 'Todos' || c.status === statusFilter;
         return matchSearch && matchStatus;
     });
@@ -90,16 +90,16 @@ export default function ClientsPanel() {
                         <Link key={c.id} to={`/${slug}/clientes/${c.id}`} className="glass-card p-4 group block hover:border-cyan-400/15">
                             <div className="flex items-center gap-4">
                                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400/15 to-purple-500/15 border border-white/[0.06] flex items-center justify-center text-white font-bold flex-shrink-0">
-                                    {c.client_name?.[0]?.toUpperCase() || '?'}
+                                    {(c.name || c.client_name)?.[0]?.toUpperCase() || '?'}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="text-sm font-semibold text-white/80 group-hover:text-white">{c.client_name}</p>
+                                        <p className="text-sm font-semibold text-white/80 group-hover:text-white">{c.name || c.client_name}</p>
                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${c.status === 'Entregue' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' :
-                                                c.status === 'Pronto' ? 'bg-purple-500/15 text-purple-400 border-purple-500/25' :
-                                                    c.status === 'Em Produção' ? 'bg-amber-500/12 text-amber-400 border-amber-500/20' :
-                                                        c.status === 'Novo' ? 'bg-red-500/15 text-red-400 border-red-500/25' :
-                                                            'bg-white/5 text-white/30 border-white/10'
+                                            c.status === 'Pronto' ? 'bg-purple-500/15 text-purple-400 border-purple-500/25' :
+                                                c.status === 'Em Produção' ? 'bg-amber-500/12 text-amber-400 border-amber-500/20' :
+                                                    c.status === 'Novo' ? 'bg-red-500/15 text-red-400 border-red-500/25' :
+                                                        'bg-white/5 text-white/30 border-white/10'
                                             }`}>{c.status}</span>
                                     </div>
                                     <div className="flex items-center gap-4 mt-1">
