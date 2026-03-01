@@ -1,0 +1,151 @@
+# Supabase Migration + Vercel Deploy — Implementation Plan
+
+Migrates the ÓticaSystem from localStorage-based fake persistence to real Supabase (Postgres + Auth + RLS), then deploys to Vercel. The build step runs the migration script automatically, keeping the process CI-friendly and idempotent.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Before running the build**, you must:
+> 1. Create a Supabase project and copy the Project URL, Anon Key, and Database URL from the dashboard.
+> 2. Create a `.env` file at the project root (copy from `.env.example`) and fill in the three variables.
+> 3. After the first build/migrate, manually create the four auth users in the Supabase dashboard and run the `INSERT INTO profiles` SQL (as explained in Step 6 of the request).
+
+> [!WARNING]
+> The existing [useStore.js](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js) will be **replaced** by a new `authStore.js`. All pages that currently call `useStore()` will be updated to use the new store + service layer. There is no automated rollback — make sure you have the current code committed to Git before proceeding.
+
+## Proposed Changes
+
+### Dependencies
+
+#### [MODIFY] package.json
+
+- Add `@supabase/supabase-js` and `pg` to `dependencies`
+- Change `"build"` script to `"node scripts/migrate.js && vite build"` (already has `"type": "module"`)
+
+---
+
+### Integration Layer
+
+#### [NEW] src/lib/supabase.js
+Creates the Supabase client using `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+
+#### [NEW] scripts/migrate.js
+Node.js ES module script that connects via `DATABASE_URL` (pg) with SSL, executes the full idempotent SQL (tables, triggers, RLS policies, views, seed data), and calls `process.exit(0)` on success.
+
+---
+
+### State & Services (replaces useStore.js)
+
+#### [NEW] src/store/authStore.js
+Zustand store managing Supabase Auth session:
+- [loginMaster(email, password)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#16-24) — `signInWithPassword` + validates `role === 'master'` in `profiles`
+- [loginUnit(email, password, slug)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#25-41) — same, validates `role === 'unit'` and unit slug
+- [logout()](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#43-44) — `supabase.auth.signOut()`
+- `init()` — `getSession()` + `onAuthStateChange` listener
+- State: `{ user, profile, unit, session, loading }`
+
+#### [NEW] src/services/clientService.js
+Pure async functions (not Zustand):
+- [getClients(unitId, filters)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#80-86) — select with optional status/name filters
+- `getClientById(id)` — includes `status_history(*)`
+- [createClient(unitId, data)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#91-112) — insert + create first status_history entry
+- [updateClient(id, updates)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#113-126) — simple update
+- `updateClientStatus(client, newStatus, note)` — update status + insert status_history
+- [deleteClient(id)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#127-132) — delete
+- `getUnitMetrics(unitId)` — aggregate query for dashboard cards
+
+#### [NEW] src/services/unitService.js
+Pure async functions:
+- `getAllUnits()` — reads `unit_summary` view
+- `getUnitBySlug(slug)` — reads `units` table
+- [createUnit(data)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#52-65) — insert
+- `toggleUnitActive(id, active)` — update `active` column
+- [getNotifications(unitId)](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#133-139) — `unit_id = unitId OR unit_id IS NULL`
+- `createNotification({ unitId, title, message, type })` — insert
+- `markNotificationRead(id)` — update `read = true`
+
+---
+
+### Pages (updated to async Supabase calls)
+
+All pages currently import `useStore`. They will be migrated to:
+- Use `useAuthStore` (Zustand) for auth state
+- Call `clientService.*` / `unitService.*` directly with `useEffect` + local state
+
+#### [MODIFY] src/App.jsx
+- Call `authStore.init()` on mount via `useEffect`
+- Updated route guards: check `authStore.profile.role` instead of `masterAuth`/`unitAuth`
+- Show loading spinner while session is being restored
+
+#### [MODIFY] src/pages/master/MasterLogin.jsx
+- Calls `authStore.loginMaster(email, password)` (async)
+- Shows proper error messages from Supabase
+
+#### [MODIFY] src/pages/master/MasterDashboard.jsx
+- Reads `unitService.getAllUnits()` in `useEffect`
+- Sends notifications via `unitService.createNotification()`
+- Toggles active via `unitService.toggleUnitActive()`
+- Logout via `authStore.logout()`
+
+#### [MODIFY] src/pages/master/UnitsList.jsx
+- Reads from `unitService.getAllUnits()`
+
+#### [MODIFY] src/pages/master/NewUnit.jsx
+- Creates via `unitService.createUnit(data)`
+
+#### [MODIFY] src/pages/unit/UnitLogin.jsx
+- Fetches unit info via `unitService.getUnitBySlug(slug)` in `useEffect`
+- Calls `authStore.loginUnit(email, password, slug)` (async)
+
+#### [MODIFY] src/pages/unit/UnitDashboard.jsx
+- Fetches metrics via `clientService.getUnitMetrics(unitId)` or `clientService.getClients(unitId)`
+- Gets `unitId` from `authStore.profile.unit_id`
+
+#### [MODIFY] src/pages/unit/ClientsPanel.jsx
+- Calls `clientService.getClients(unitId, { status, name })` in `useEffect`
+
+#### [MODIFY] src/pages/unit/ClientForm.jsx
+- Calls `clientService.createClient` / [updateClient](file:///c:/Users/Cris/Documents/gravity/src/store/useStore.js#113-126)
+
+#### [MODIFY] src/pages/unit/ClientDetails.jsx
+- Calls `clientService.getClientById(id)` and `clientService.updateClientStatus()`
+
+#### [MODIFY] src/pages/unit/CRMPage.jsx
+- Reads from `clientService.getClients()` + reformats for CRM display
+
+---
+
+### Configuration Files
+
+#### [NEW] .env.example
+```
+VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+DATABASE_URL=postgresql://postgres:[senha]@db.xxxxxxxxxxxx.supabase.co:5432/postgres
+```
+
+#### [MODIFY] .gitignore
+- Add `.env` line to prevent secrets from being committed
+
+---
+
+## Verification Plan
+
+### Automated (Build-time)
+```bash
+# Run the migration script directly (requires DATABASE_URL in .env):
+node scripts/migrate.js
+
+# Then build the app (runs migration + vite build):
+npm run build
+```
+Success when: script exits 0 and `dist/` folder is created.
+
+### Manual Verification (Browser)
+After running `npm run dev` (or deploying to Vercel):
+
+1. **Master login**: go to `/master/login` → login with `admin@master.com` / `master123` → should land on Master Dashboard showing units.
+2. **Unit login**: go to `/centro/login` → login with `centro@otica.com` / `123456` → should land on Unit Dashboard with clients.
+3. **Client list**: navigate to `/centro/clientes` → should show 12 seeded clients.
+4. **Status change**: open any client detail → change status → reload page → status should persist (Supabase, not localStorage).
+5. **Notifications**: in Master Dashboard, send a notification to a unit → switch to unit panel → notification should appear.

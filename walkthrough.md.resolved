@@ -1,0 +1,80 @@
+# ÓticaSystem — Walkthrough
+
+## O que foi construído
+
+Sistema web completo multi-tenant para gestão de óticas com dois níveis de acesso: **Master Admin** e **Painel da Unidade**.
+
+## Resultado Visual
+
+````carousel
+![Master Admin Dashboard — dark theme com métricas consolidadas, lista de unidades e faturamento total R$19.510](C:\Users\Cris\.gemini\antigravity\brain\2bfa1cdb-f4f9-4865-83a8-bef37cdedfa4\master_dashboard_1772310184049.png)
+<!-- slide -->
+![Painel da Unidade (Ótica Centro) — status cards coloridos, clientes recentes, R$15.310 faturamento](C:\Users\Cris\.gemini\antigravity\brain\2bfa1cdb-f4f9-4865-83a8-bef37cdedfa4\unit_dashboard_1772310260071.png)
+<!-- slide -->
+![CRM — Visão Estratégica com gráficos Recharts: faturamento mensal e pizza de status](C:\Users\Cris\.gemini\antigravity\brain\2bfa1cdb-f4f9-4865-83a8-bef37cdedfa4\crm_dashboard_1772310313693.png)
+````
+
+## Gravação do Teste
+
+![Fluxo completo: login master → dashboard → acesso unidade → clientes → CRM](C:\Users\Cris\.gemini\antigravity\brain\2bfa1cdb-f4f9-4865-83a8-bef37cdedfa4\master_login_flow_1772310138539.webp)
+
+## Stack Utilizada
+
+| Tecnologia | Uso |
+|---|---|
+| React + Vite | Framework principal |
+| TailwindCSS v4 | Estilização com tokens customizados |
+| React Router v7 | Roteamento com proteção por nível |
+| Zustand + persist | Estado global + autenticação persistente |
+| Recharts | Gráficos CRM (bar, pie, horizontal bar) |
+| Lucide React | Ícones |
+| localStorage | Banco de dados simulado multi-tenant |
+
+## Acesso ao Sistema
+
+### Master Admin
+- **URL:** http://localhost:5173/master/login
+- **E-mail:** `admin@master.com`
+- **Senha:** `master123`
+
+### Painel das Unidades
+| Unidade | URL | E-mail | Senha |
+|---|---|---|---|
+| Ótica Centro (SP) | `/centro/login` | `centro@otica.com` | `123456` |
+| Ótica Norte (Campinas) | `/norte/login` | `norte@otica.com` | `123456` |
+| Ótica Sul (Santos, inativa) | `/sul/login` | `sul@otica.com` | `123456` |
+
+## Módulos Implementados
+
+### 🔐 Autenticação
+- Login isolado por nível (master x unidade)
+- Rotas protegidas com redirect automático
+- Sessão persistida no localStorage
+
+### 🌐 Master Admin (tema dark)
+- Dashboard com métricas consolidadas de todas as unidades
+- Lista de unidades com faturamento e último acesso
+- Toggle ativa/inativa por unidade
+- Modal de notificações para unidade específica ou todas
+- Botão "+ Nova Unidade" com formulário completo
+
+### 🏪 Painel da Unidade (tema claro)
+- **Dashboard:** métricas + status cards clicáveis (filtram a lista)
+- **Clientes:** tabela com busca, filtros de status, responsiva (cards no mobile)
+- **Formulário Cliente:** 5 seções (identificação, prescrição OD/OE, dados pessoais, pagamento, adicionais)
+- **Detalhes:** prescrição completa, histórico de status, edição inline de status
+- **CRM:** 4 gráficos com filtro de período (faturamento, pizza, lentes, atendimentos)
+
+## Dados de Exemplo
+
+- **12 clientes** na Ótica Centro com histórico de status realista
+- **5 clientes** na Ótica Norte
+- Prescrições, armações, pagamentos e históricos realistas
+- Faturamento total: **R$ 19.510,00**
+
+## Isolamento Multi-Tenant
+
+Cada unidade usa chaves separadas no localStorage:
+- `otica_centro_clients`, `otica_norte_clients`, `otica_sul_clients`
+- `otica_{slug}_notifications`
+- Dados completamente isolados entre unidades
