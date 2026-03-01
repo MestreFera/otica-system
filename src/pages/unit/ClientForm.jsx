@@ -21,7 +21,7 @@ const EMPTY_FORM = {
     phone: '', email: '', address: '', city: '', zip_code: '',
     total_value: '', paid_value: '', payment_method: 'PIX', installments: '1',
     frame_brand: '', frame_model: '', frame_color: '',
-    lens_type: '', lens_material: '', lab: '',
+    lens_type: '', lens_material: '',
     status: 'Novo', notes: '',
 };
 

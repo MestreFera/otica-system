@@ -1,7 +1,55 @@
 import { supabase } from '../lib/supabase';
 
+// Exact list of valid columns in the 'clients' table
+const VALID_COLUMNS = [
+    'name', 'cpf', 'rg', 'birth_date', 'gender',
+    'phone', 'email', 'address', 'city', 'zip_code',
+    'od_esf', 'od_cil', 'od_eixo', 'od_dnp', 'od_add',
+    'oe_esf', 'oe_cil', 'oe_eixo', 'oe_dnp', 'oe_add',
+    'doctor_name', 'exam_date',
+    'frame_brand', 'frame_model', 'frame_color',
+    'lens_type', 'lens_material',
+    'total_value', 'paid_value', 'payment_method', 'installments',
+    'notes', 'unit_id', 'status',
+    'status_ia', 'etapa_fluxo', 'ultima_interacao', 'ultima_mensagem',
+];
+
+function buildPayload(formData, unitId) {
+    const num = v => (v === '' || v === undefined || v === null) ? null : Number(v);
+
+    const raw = {
+        unit_id: unitId,
+        name: formData.name || formData.client_name || '',
+        cpf: formData.cpf || null, rg: formData.rg || null,
+        birth_date: formData.birth_date || null, gender: formData.gender || null,
+        od_esf: num(formData.od_esf), od_cil: num(formData.od_cil), od_eixo: num(formData.od_eixo),
+        od_dnp: num(formData.od_dnp), od_add: num(formData.od_add),
+        oe_esf: num(formData.oe_esf), oe_cil: num(formData.oe_cil), oe_eixo: num(formData.oe_eixo),
+        oe_dnp: num(formData.oe_dnp), oe_add: num(formData.oe_add),
+        doctor_name: formData.doctor_name || null, exam_date: formData.exam_date || null,
+        phone: formData.phone || null, email: formData.email || null,
+        address: formData.address || null, city: formData.city || null,
+        zip_code: formData.zip_code || null,
+        total_value: num(formData.total_value), paid_value: num(formData.paid_value),
+        payment_method: formData.payment_method || null,
+        installments: num(formData.installments) || 1,
+        frame_brand: formData.frame_brand || null, frame_model: formData.frame_model || null,
+        frame_color: formData.frame_color || null,
+        lens_type: formData.lens_type || null, lens_material: formData.lens_material || null,
+        status: formData.status || 'Novo', notes: formData.notes || null,
+    };
+
+    // Strip any key NOT in the valid columns list
+    const payload = {};
+    for (const key of VALID_COLUMNS) {
+        if (key in raw) payload[key] = raw[key];
+    }
+
+    console.log('[clientService] payload →', JSON.stringify(payload, null, 2));
+    return payload;
+}
+
 export const clientService = {
-    // Fetch clients for a unit
     async getClients(unitId, filters = {}) {
         let query = supabase.from('clients').select('*').eq('unit_id', unitId);
         if (filters.status) query = query.eq('status', filters.status);
@@ -12,13 +60,9 @@ export const clientService = {
         return data || [];
     },
 
-    // Get full client details with status history
     async getClientById(id) {
         const { data, error } = await supabase
-            .from('clients')
-            .select('*, status_history(*)')
-            .eq('id', id)
-            .single();
+            .from('clients').select('*, status_history(*)').eq('id', id).single();
         if (error) { console.error('getClientById:', error); return null; }
         if (data?.status_history) {
             data.status_history.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -26,98 +70,29 @@ export const clientService = {
         return data;
     },
 
-    // Create new client — field names match the DB exactly
     async createClient(unitId, formData) {
-        const num = v => (v === '' || v === undefined || v === null) ? null : Number(v);
-
-        const payload = {
-            unit_id: unitId,
-            // Identification — DB field is "name", NOT "client_name"
-            name: formData.name || formData.client_name || '',
-            cpf: formData.cpf || null,
-            rg: formData.rg || null,
-            birth_date: formData.birth_date || null,
-            gender: formData.gender || null,
-            // Prescription OD
-            od_esf: num(formData.od_esf),
-            od_cil: num(formData.od_cil),
-            od_eixo: num(formData.od_eixo),
-            od_dnp: num(formData.od_dnp),
-            od_add: num(formData.od_add),
-            // Prescription OE
-            oe_esf: num(formData.oe_esf),
-            oe_cil: num(formData.oe_cil),
-            oe_eixo: num(formData.oe_eixo),
-            oe_dnp: num(formData.oe_dnp),
-            oe_add: num(formData.oe_add),
-            doctor_name: formData.doctor_name || null,
-            exam_date: formData.exam_date || null,
-            // Contact
-            phone: formData.phone || null,
-            email: formData.email || null,
-            address: formData.address || null,
-            city: formData.city || null,
-            zip_code: formData.zip_code || null,
-            // Payment
-            total_value: num(formData.total_value),
-            paid_value: num(formData.paid_value),
-            payment_method: formData.payment_method || null,
-            installments: num(formData.installments) || 1,
-            // Product
-            frame_brand: formData.frame_brand || null,
-            frame_model: formData.frame_model || null,
-            frame_color: formData.frame_color || null,
-            lens_type: formData.lens_type || null,
-            lens_material: formData.lens_material || null,
-            lab: formData.lab || null,
-            // Status + Notes
-            status: formData.status || 'Novo',
-            notes: formData.notes || null,
-        };
+        const payload = buildPayload(formData, unitId);
 
         const { data, error } = await supabase.from('clients').insert([payload]).select().single();
         if (error) { console.error('createClient:', error); return { success: false, error: error.message }; }
 
-        // Initial status history entry
         await supabase.from('status_history').insert([{
             client_id: data.id, unit_id: unitId,
             new_status: payload.status, note: 'Cadastro inicial',
         }]);
-
         return { success: true, data };
     },
 
-    // Update client — same exact field names as DB
     async updateClient(id, formData) {
-        const num = v => (v === '' || v === undefined || v === null) ? null : Number(v);
-
-        const payload = {
-            name: formData.name || formData.client_name || '',
-            cpf: formData.cpf || null, rg: formData.rg || null,
-            birth_date: formData.birth_date || null, gender: formData.gender || null,
-            od_esf: num(formData.od_esf), od_cil: num(formData.od_cil), od_eixo: num(formData.od_eixo),
-            od_dnp: num(formData.od_dnp), od_add: num(formData.od_add),
-            oe_esf: num(formData.oe_esf), oe_cil: num(formData.oe_cil), oe_eixo: num(formData.oe_eixo),
-            oe_dnp: num(formData.oe_dnp), oe_add: num(formData.oe_add),
-            doctor_name: formData.doctor_name || null, exam_date: formData.exam_date || null,
-            phone: formData.phone || null, email: formData.email || null,
-            address: formData.address || null, city: formData.city || null,
-            zip_code: formData.zip_code || null,
-            total_value: num(formData.total_value), paid_value: num(formData.paid_value),
-            payment_method: formData.payment_method || null,
-            installments: num(formData.installments) || 1,
-            frame_brand: formData.frame_brand || null, frame_model: formData.frame_model || null,
-            frame_color: formData.frame_color || null, lens_type: formData.lens_type || null,
-            lens_material: formData.lens_material || null, lab: formData.lab || null,
-            status: formData.status || 'Novo', notes: formData.notes || null,
-        };
+        // For updates we don't need unit_id in the payload
+        const payload = buildPayload(formData, formData.unit_id);
+        delete payload.unit_id; // don't overwrite FK
 
         const { data, error } = await supabase.from('clients').update(payload).eq('id', id).select().single();
         if (error) { console.error('updateClient:', error); return { success: false, error: error.message }; }
         return { success: true, data };
     },
 
-    // Change status and log history
     async updateClientStatus(client, newStatus, note, userId) {
         const { data, error } = await supabase
             .from('clients').update({ status: newStatus }).eq('id', client.id).select().single();
@@ -130,14 +105,12 @@ export const clientService = {
         return { success: true, data };
     },
 
-    // Delete client
     async deleteClient(id) {
         const { error } = await supabase.from('clients').delete().eq('id', id);
         if (error) { console.error('deleteClient:', error); return { success: false, error: error.message }; }
         return { success: true };
     },
 
-    // Unit metrics — tries view first, falls back to raw aggregate
     async getUnitMetrics(unitId) {
         try {
             const { data, error } = await supabase.from('unit_summary').select('*').eq('id', unitId).single();
