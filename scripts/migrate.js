@@ -4,13 +4,13 @@ const { Client } = pkg;
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-    console.log("Skipping migration: DATABASE_URL not found.");
-    process.exit(0);
+  console.log("Skipping migration: DATABASE_URL not found.");
+  process.exit(0);
 }
 
 const client = new Client({
-    connectionString,
-    ssl: { rejectUnauthorized: false }
+  connectionString,
+  ssl: { rejectUnauthorized: false }
 });
 
 const sql = `
@@ -170,21 +170,158 @@ insert into public.notifications (unit_id,title,message,type) values
   ('11111111-0000-0000-0000-000000000001','Meta do Mês','Você está a 85% da meta de faturamento mensal. Ótimo trabalho!','info'),
   ('11111111-0000-0000-0000-000000000002','Pedido Pendente','Verifique os pedidos em produção com prazo vencendo amanhã.','warning')
 on conflict do nothing;
+
+-- ═══ EXTENDED SCHEMA ═══
+
+alter table public.clients add column if not exists public_token uuid default uuid_generate_v4() unique;
+alter table public.clients add column if not exists client_name text;
+alter table public.clients add column if not exists lab text;
+
+-- Backfill client_name from name for compatibility
+update public.clients set client_name = name where client_name is null and name is not null;
+
+create table if not exists public.automations (
+  id               uuid primary key default uuid_generate_v4(),
+  unit_id          uuid not null references public.units(id) on delete cascade,
+  name             text not null,
+  description      text,
+  trigger_event    text not null check (trigger_event in (
+                     'status_changed','status_novo','status_producao',
+                     'status_pronto','status_entregue','status_cancelado',
+                     'client_created','appointment_created',
+                     'days_in_production','payment_overdue'
+                   )),
+  trigger_value    text,
+  action_type      text not null check (action_type in ('webhook','internal_notification')),
+  webhook_url      text,
+  webhook_method   text default 'POST',
+  webhook_headers  jsonb default '{}',
+  message_template text,
+  active           boolean not null default true,
+  runs_count       integer default 0,
+  success_count    integer default 0,
+  error_count      integer default 0,
+  last_run_at      timestamptz,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+create table if not exists public.automation_logs (
+  id              uuid primary key default uuid_generate_v4(),
+  automation_id   uuid not null references public.automations(id) on delete cascade,
+  unit_id         uuid not null references public.units(id) on delete cascade,
+  client_id       uuid references public.clients(id) on delete set null,
+  client_name     text,
+  trigger_event   text,
+  status          text not null check (status in ('success','error','pending')),
+  payload         jsonb,
+  response_status integer,
+  response_body   text,
+  duration_ms     integer,
+  created_at      timestamptz not null default now()
+);
+
+create table if not exists public.appointments (
+  id           uuid primary key default uuid_generate_v4(),
+  unit_id      uuid not null references public.units(id) on delete cascade,
+  client_id    uuid references public.clients(id) on delete set null,
+  client_name  text not null,
+  phone        text,
+  date         date not null,
+  time         text not null,
+  duration_min smallint default 30,
+  type         text default 'Consulta' check (type in ('Consulta','Entrega','Ajuste','Retorno','Exame')),
+  status       text default 'Agendado' check (status in ('Agendado','Confirmado','Concluído','Cancelado','Faltou')),
+  notes        text,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create table if not exists public.unit_goals (
+  id            uuid primary key default uuid_generate_v4(),
+  unit_id       uuid not null references public.units(id) on delete cascade,
+  month         date not null,
+  revenue_goal  numeric(10,2) not null,
+  clients_goal  integer,
+  created_at    timestamptz not null default now(),
+  unique(unit_id, month)
+);
+
+create table if not exists public.unit_settings (
+  unit_id                uuid primary key references public.units(id) on delete cascade,
+  whatsapp_number        text,
+  opening_hours          text,
+  production_alert_days  smallint default 7,
+  logo_url               text,
+  primary_color          text default '#00d4ff',
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now()
+);
+
+create table if not exists public.audit_logs (
+  id           uuid primary key default uuid_generate_v4(),
+  unit_id      uuid references public.units(id) on delete set null,
+  user_id      uuid,
+  action       text not null,
+  table_name   text,
+  record_id    uuid,
+  old_data     jsonb,
+  new_data     jsonb,
+  ip_address   text,
+  created_at   timestamptz not null default now()
+);
+
+-- Indexes
+create index if not exists idx_automations_unit on public.automations(unit_id);
+create index if not exists idx_automation_logs_auto on public.automation_logs(automation_id);
+create index if not exists idx_appointments_unit on public.appointments(unit_id);
+create index if not exists idx_appointments_date on public.appointments(date);
+create index if not exists idx_clients_token on public.clients(public_token);
+
+-- Triggers
+drop trigger if exists trg_automations_updated on public.automations;
+drop trigger if exists trg_appointments_updated on public.appointments;
+drop trigger if exists trg_settings_updated on public.unit_settings;
+create trigger trg_automations_updated before update on public.automations for each row execute function public.set_updated_at();
+create trigger trg_appointments_updated before update on public.appointments for each row execute function public.set_updated_at();
+create trigger trg_settings_updated before update on public.unit_settings for each row execute function public.set_updated_at();
+
+-- RLS
+alter table public.automations      enable row level security;
+alter table public.automation_logs  enable row level security;
+alter table public.appointments     enable row level security;
+alter table public.unit_goals       enable row level security;
+alter table public.unit_settings    enable row level security;
+alter table public.audit_logs       enable row level security;
+
+drop policy if exists "automations_policy" on public.automations;
+drop policy if exists "logs_policy" on public.automation_logs;
+drop policy if exists "appointments_policy" on public.appointments;
+drop policy if exists "goals_policy" on public.unit_goals;
+drop policy if exists "settings_policy" on public.unit_settings;
+drop policy if exists "audit_policy" on public.audit_logs;
+
+create policy "automations_policy"  on public.automations     for all using (public.my_role()='master' or unit_id=public.my_unit_id());
+create policy "logs_policy"         on public.automation_logs for all using (public.my_role()='master' or unit_id=public.my_unit_id());
+create policy "appointments_policy" on public.appointments    for all using (public.my_role()='master' or unit_id=public.my_unit_id());
+create policy "goals_policy"        on public.unit_goals      for all using (public.my_role()='master' or unit_id=public.my_unit_id());
+create policy "settings_policy"     on public.unit_settings   for all using (public.my_role()='master' or unit_id=public.my_unit_id());
+create policy "audit_policy"        on public.audit_logs      for select using (public.my_role()='master' or unit_id=public.my_unit_id());
 `;
 
 async function runMigration() {
-    try {
-        await client.connect();
-        console.log("Connected to database. Running migration...");
-        await client.query(sql);
-        console.log("Migration completed successfully.");
-        process.exit(0);
-    } catch (err) {
-        console.error("Migration failed!", err);
-        process.exit(1);
-    } finally {
-        await client.end();
-    }
+  try {
+    await client.connect();
+    console.log("Connected to database. Running migration...");
+    await client.query(sql);
+    console.log("Migration completed successfully.");
+    process.exit(0);
+  } catch (err) {
+    console.error("Migration failed!", err);
+    process.exit(1);
+  } finally {
+    await client.end();
+  }
 }
 
 runMigration();
