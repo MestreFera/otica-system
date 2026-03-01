@@ -326,6 +326,15 @@ grant usage on schema public to anon;
 grant select on public.clients to anon;
 grant select on public.units to anon;
 grant select on public.unit_settings to anon;
+
+-- ═══ UNITS EXTRA COLUMNS ═══
+alter table public.units add column if not exists whatsapp text;
+
+-- ═══ FIX EMAIL CONFIRMATION ═══
+-- Confirms any users whose emails are still unverified so they can log in.
+update auth.users
+set email_confirmed_at = coalesce(email_confirmed_at, now())
+where email_confirmed_at is null;
 `;
 
 async function runMigration() {

@@ -158,6 +158,37 @@ export const unitService = {
         return { success: true };
     },
 
+    // Update unit fields
+    async updateUnit(id, fields) {
+        const { data, error } = await supabase
+            .from('units')
+            .update(fields)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('ERRO updateUnit:', error);
+            return { success: false, error: error.message };
+        }
+        return { success: true, data };
+    },
+
+    // Delete unit (cascades to profiles, clients, etc via FK)
+    async deleteUnit(id) {
+        const { error } = await supabase
+            .from('units')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('ERRO deleteUnit:', error);
+            return { success: false, error: error.message };
+        }
+        return { success: true };
+    },
+
+
     // ---- NOTIFICATIONS ----
     async getNotifications(unitId) {
         const query = supabase.from('notifications').select('*');
