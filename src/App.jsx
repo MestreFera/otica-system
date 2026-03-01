@@ -35,7 +35,7 @@ function RootRedirect() {
   if (loading) return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
 
   if (profile?.role === 'master') return <Navigate to="/master/dashboard" replace />;
-  if (profile?.role === 'unit' && profile.unit) return <Navigate to={`/${profile.unit.slug}/dashboard`} replace />;
+  if (profile?.role === 'unit' && profile.units) return <Navigate to={`/${profile.units.slug}/dashboard`} replace />;
 
   return <Navigate to="/master/login" replace />;
 }

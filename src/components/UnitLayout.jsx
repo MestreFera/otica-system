@@ -1,18 +1,30 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import useStore from '../store/useStore';
+import useAuthStore from '../store/authStore';
+import { unitService } from '../services/unitService';
 import {
     LayoutDashboard, Users, BarChart2, LogOut, Menu, X,
     Bell, ChevronRight, Building2
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function UnitLayout({ children, slug }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { logoutUnit, unitAuth, getNotifications } = useStore();
+    const { logout, profile, user } = useAuthStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
 
-    const notifications = getNotifications(slug).filter(n => !n.read);
+    const unitName = profile?.units?.name || slug;
+    const userEmail = user?.email || '';
+
+    useEffect(() => {
+        if (!profile?.unit_id) return;
+        async function loadNotifications() {
+            const data = await unitService.getNotifications(profile.unit_id);
+            setNotifications(data.filter(n => !n.read));
+        }
+        loadNotifications();
+    }, [profile?.unit_id]);
 
     const nav = [
         { to: `/${slug}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
@@ -20,8 +32,8 @@ export default function UnitLayout({ children, slug }) {
         { to: `/${slug}/crm`, label: 'CRM', icon: BarChart2 },
     ];
 
-    function handleLogout() {
-        logoutUnit();
+    async function handleLogout() {
+        await logout();
         navigate(`/${slug}/login`);
     }
 
@@ -38,7 +50,7 @@ export default function UnitLayout({ children, slug }) {
                     </div>
                     <div>
                         <p className="text-xs text-gray-400 font-medium">Ótica</p>
-                        <p className="text-sm font-bold text-gray-800 leading-tight">{unitAuth?.unitName || slug}</p>
+                        <p className="text-sm font-bold text-gray-800 leading-tight">{unitName}</p>
                     </div>
                 </div>
 
@@ -50,8 +62,8 @@ export default function UnitLayout({ children, slug }) {
                             to={to}
                             onClick={() => setSidebarOpen(false)}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${isActive(to)
-                                    ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 border border-indigo-100'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 border border-indigo-100'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                         >
                             <Icon size={18} className={isActive(to) ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-600'} />
@@ -65,10 +77,10 @@ export default function UnitLayout({ children, slug }) {
                 <div className="px-4 py-4 border-t border-gray-100">
                     <div className="flex items-center gap-3 mb-3 px-2">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                            {unitAuth?.email?.[0]?.toUpperCase() || 'U'}
+                            {userEmail?.[0]?.toUpperCase() || 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-700 truncate">{unitAuth?.email}</p>
+                            <p className="text-xs font-medium text-gray-700 truncate">{userEmail}</p>
                             <p className="text-xs text-gray-400">Gerente</p>
                         </div>
                     </div>
