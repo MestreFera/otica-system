@@ -65,20 +65,84 @@ export const unitService = {
         return data;
     },
 
-    // Create new unit
-    async createUnit(unitData) {
-        const { data, error } = await supabase
+    // Create new unit — full flow: unit row + auth user + profile
+    // Rolls back any created resources if a step fails.
+    async createUnit({ name, slug, email, password, city, state, active, onStep }) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+
+        let createdUnitId = null;
+        let createdAuthUid = null;
+
+        // ── Step 1: Insert unit row ───────────────────────────────────────────
+        if (onStep) onStep('Criando unidade...');
+        const { data: unitData, error: unitError } = await supabase
             .from('units')
-            .insert([unitData])
+            .insert([{ name, slug, email, city, state, active }])
             .select()
             .single();
 
-        if (error) {
-            console.error('ERRO createUnit:', error);
-            return { success: false, error: error.message };
+        if (unitError) {
+            console.error('ERRO createUnit (units):', unitError);
+            return { success: false, error: unitError.message };
         }
-        return { success: true, data };
+        createdUnitId = unitData.id;
+
+        // ── Step 2: Create auth user via Admin API (requires service_role key) ─
+        if (onStep) onStep('Criando usuário de acesso...');
+        const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': serviceKey,
+                'Authorization': `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({ email, password, email_confirm: true }),
+        });
+
+        if (!authRes.ok) {
+            const errBody = await authRes.text();
+            console.error('ERRO createUnit (admin/users):', errBody);
+
+            // Rollback: delete unit
+            await supabase.from('units').delete().eq('id', createdUnitId);
+            return { success: false, error: `Falha ao criar usuário de acesso: ${errBody}` };
+        }
+
+        const authData = await authRes.json();
+        createdAuthUid = authData?.id;
+
+        if (!createdAuthUid) {
+            // Unexpected: no user id returned
+            await supabase.from('units').delete().eq('id', createdUnitId);
+            return { success: false, error: 'Usuário criado mas sem ID retornado pela API.' };
+        }
+
+        // ── Step 3: Insert profile linking user → unit ────────────────────────
+        if (onStep) onStep('Vinculando perfil...');
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{ id: createdAuthUid, role: 'unit', unit_id: createdUnitId }]);
+
+        if (profileError) {
+            console.error('ERRO createUnit (profiles):', profileError);
+
+            // Rollback: delete auth user then unit
+            await fetch(`${supabaseUrl}/auth/v1/admin/users/${createdAuthUid}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': serviceKey,
+                    'Authorization': `Bearer ${serviceKey}`,
+                },
+            });
+            await supabase.from('units').delete().eq('id', createdUnitId);
+            return { success: false, error: `Unidade e usuário criados, mas falha ao vincular perfil: ${profileError.message}` };
+        }
+
+        if (onStep) onStep('Concluído!');
+        return { success: true, data: unitData };
     },
+
 
     // Toggle active/inactive
     async toggleUnitActive(id, currentActive) {

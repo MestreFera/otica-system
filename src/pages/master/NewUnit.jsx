@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { unitService } from '../../services/unitService';
 import { ArrowLeft, Building2, Eye, EyeOff } from 'lucide-react';
 
@@ -32,81 +31,26 @@ export default function NewUnit() {
         if (Object.keys(errs).length) { setErrors(errs); return; }
 
         setLoading(true);
+        setStep('');
         try {
-            // Step 1: Create the unit row
-            setStep('Criando unidade...');
-            const { success: unitOk, data: unitData, error: unitErr } = await unitService.createUnit({
+            const result = await unitService.createUnit({
                 name: form.name,
                 slug: form.slug,
                 email: form.email,
+                password: form.password,
                 city: form.city,
                 state: form.state,
-                active: form.active
+                active: form.active,
+                onStep: (msg) => setStep(msg),
             });
 
-            if (!unitOk) {
-                setErrors({ slug: unitErr || 'Erro ao criar unidade (slug/email já existem?)' });
+            if (!result.success) {
+                setErrors({ slug: result.error || 'Erro ao criar unidade.' });
                 setLoading(false);
                 setStep('');
                 return;
             }
 
-            // Step 2: Create the auth user via Supabase Admin API
-            setStep('Criando usuário de acesso...');
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-            const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${supabaseKey}`,
-                },
-                body: JSON.stringify({
-                    email: form.email,
-                    password: form.password,
-                    email_confirm: true,
-                }),
-            });
-
-            if (!authRes.ok) {
-                // If admin API fails (requires service_role), try signUp instead
-                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                    email: form.email,
-                    password: form.password,
-                });
-
-                if (signUpError) {
-                    setErrors({ email: 'Unidade criada, mas falha ao criar login: ' + signUpError.message });
-                    setLoading(false);
-                    setStep('');
-                    return;
-                }
-
-                // Step 3: Insert profile linking user to unit
-                setStep('Vinculando perfil...');
-                if (signUpData?.user?.id) {
-                    await supabase.from('profiles').insert([{
-                        id: signUpData.user.id,
-                        role: 'unit',
-                        unit_id: unitData.id,
-                    }]);
-                }
-            } else {
-                // Admin API worked, get the user id
-                const authData = await authRes.json();
-                setStep('Vinculando perfil...');
-                if (authData?.id) {
-                    await supabase.from('profiles').insert([{
-                        id: authData.id,
-                        role: 'unit',
-                        unit_id: unitData.id,
-                    }]);
-                }
-            }
-
-            setStep('Concluído!');
             navigate('/master/unidades');
         } catch (err) {
             setErrors({ slug: 'Erro inesperado: ' + err.message });
