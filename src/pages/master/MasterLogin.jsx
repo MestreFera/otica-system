@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import { Scan, Lock } from 'lucide-react';
 
 export default function MasterLogin() {
     const navigate = useNavigate();
-    const loginMaster = useAuthStore(s => s.loginMaster);
+    const { loginMaster } = useAuthStore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -24,73 +25,70 @@ export default function MasterLogin() {
     }
 
     return (
-        <div className="min-h-screen gradient-master flex items-center justify-center p-4 dark-scroll">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-yellow-500/5 rounded-full blur-3xl" />
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
-            </div>
+        <div className="min-h-screen gradient-master flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Ambient glows */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
             <div className="relative w-full max-w-md animate-fadeIn">
+                {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-2xl mb-4">
-                        <span className="text-3xl">👁</span>
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 shadow-2xl shadow-cyan-500/30 mb-5 relative">
+                        <Scan size={36} className="text-white" />
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-400/20 to-purple-600/20 blur-xl" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-1">ÓticaSystem</h1>
-                    <p className="text-gray-400 text-sm">Painel Master — Acesso Administrativo</p>
+                    <h1 className="text-3xl font-black text-white tracking-tight">
+                        Ótica<span className="text-cyan-400">System</span>
+                    </h1>
+                    <p className="text-white/30 text-sm mt-1.5 font-medium">Painel de Controle Master</p>
                 </div>
 
-                <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-8 shadow-2xl">
-                    <h2 className="text-xl font-semibold text-white mb-6">Entrar como Master</h2>
+                {/* Login Card */}
+                <div className="glass-card glow-border p-8 shadow-2xl shadow-cyan-500/5">
+                    <div className="flex items-center gap-2 mb-6">
+                        <Lock size={16} className="text-cyan-400/60" />
+                        <h2 className="text-lg font-semibold text-white">Acesso Administrativo</h2>
+                    </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1.5">E-mail</label>
+                            <label className="block text-sm font-medium text-cyan-300/70 mb-1.5">E-mail</label>
                             <input
                                 type="email"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
                                 placeholder="admin@master.com"
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/30 transition-all duration-200"
+                                className="input-futuristic w-full"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Senha</label>
+                            <label className="block text-sm font-medium text-cyan-300/70 mb-1.5">Senha</label>
                             <input
                                 type="password"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500/30 transition-all duration-200"
+                                className="input-futuristic w-full"
                                 required
                             />
                         </div>
 
                         {error && (
-                            <div className="bg-red-900/30 border border-red-700/50 text-red-400 text-sm rounded-xl px-4 py-3">
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3">
                                 {error}
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-bold py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-yellow-500/25 disabled:opacity-60 mt-2"
-                        >
+                        <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     Verificando...
                                 </span>
-                            ) : 'Acessar Painel Master'}
+                            ) : 'Entrar no Painel'}
                         </button>
                     </form>
-
-                    <div className="mt-6 p-3 bg-gray-800/50 rounded-xl border border-gray-700/50">
-                        <p className="text-xs text-gray-500 text-center">
-                            Demo: <span className="text-yellow-500/80">admin@master.com</span> / <span className="text-yellow-500/80">master123</span>
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

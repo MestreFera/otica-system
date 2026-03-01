@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import { unitService } from '../../services/unitService';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Building2, Eye, EyeOff } from 'lucide-react';
 
 export default function NewUnit() {
     const navigate = useNavigate();
     const [form, setForm] = useState({
-        name: '', slug: '', email: '',
+        name: '', slug: '', email: '', password: '',
         city: '', state: 'SP', active: true,
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [step, setStep] = useState(''); // progress feedback
 
     function validate() {
         const errs = {};
@@ -18,6 +21,7 @@ export default function NewUnit() {
         if (!form.slug.trim()) errs.slug = 'Campo obrigatório';
         if (!/^[a-z0-9-_]+$/.test(form.slug)) errs.slug = 'Apenas letras minúsculas, números e hífens';
         if (!form.email.trim()) errs.email = 'Campo obrigatório';
+        if (!form.password || form.password.length < 6) errs.password = 'Mínimo 6 caracteres';
         if (!form.city.trim()) errs.city = 'Campo obrigatório';
         return errs;
     }
@@ -28,31 +32,97 @@ export default function NewUnit() {
         if (Object.keys(errs).length) { setErrors(errs); return; }
 
         setLoading(true);
-        const { success, error } = await unitService.createUnit({
-            name: form.name,
-            slug: form.slug,
-            email: form.email,
-            city: form.city,
-            state: form.state,
-            active: form.active
-        });
-        setLoading(false);
+        try {
+            // Step 1: Create the unit row
+            setStep('Criando unidade...');
+            const { success: unitOk, data: unitData, error: unitErr } = await unitService.createUnit({
+                name: form.name,
+                slug: form.slug,
+                email: form.email,
+                city: form.city,
+                state: form.state,
+                active: form.active
+            });
 
-        if (success) {
+            if (!unitOk) {
+                setErrors({ slug: unitErr || 'Erro ao criar unidade (slug/email já existem?)' });
+                setLoading(false);
+                setStep('');
+                return;
+            }
+
+            // Step 2: Create the auth user via Supabase Admin API
+            setStep('Criando usuário de acesso...');
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+            const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`,
+                },
+                body: JSON.stringify({
+                    email: form.email,
+                    password: form.password,
+                    email_confirm: true,
+                }),
+            });
+
+            if (!authRes.ok) {
+                // If admin API fails (requires service_role), try signUp instead
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                    email: form.email,
+                    password: form.password,
+                });
+
+                if (signUpError) {
+                    setErrors({ email: 'Unidade criada, mas falha ao criar login: ' + signUpError.message });
+                    setLoading(false);
+                    setStep('');
+                    return;
+                }
+
+                // Step 3: Insert profile linking user to unit
+                setStep('Vinculando perfil...');
+                if (signUpData?.user?.id) {
+                    await supabase.from('profiles').insert([{
+                        id: signUpData.user.id,
+                        role: 'unit',
+                        unit_id: unitData.id,
+                    }]);
+                }
+            } else {
+                // Admin API worked, get the user id
+                const authData = await authRes.json();
+                setStep('Vinculando perfil...');
+                if (authData?.id) {
+                    await supabase.from('profiles').insert([{
+                        id: authData.id,
+                        role: 'unit',
+                        unit_id: unitData.id,
+                    }]);
+                }
+            }
+
+            setStep('Concluído!');
             navigate('/master/unidades');
-        } else {
-            setErrors({ slug: error || 'Erro ao criar unidade (slug/email já existem?)' });
+        } catch (err) {
+            setErrors({ slug: 'Erro inesperado: ' + err.message });
         }
+        setLoading(false);
+        setStep('');
     }
 
     const field = (key, label, type = 'text', props = {}) => (
         <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1.5">{label}</label>
+            <label className="block text-sm font-medium text-cyan-300/80 mb-1.5">{label}</label>
             <input
                 type={type}
                 value={form[key]}
                 onChange={e => { setForm(f => ({ ...f, [key]: e.target.value })); setErrors(er => ({ ...er, [key]: '' })); }}
-                className={`w-full bg-gray-800 border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none transition-all duration-200 ${errors[key] ? 'border-red-500 focus:border-red-400' : 'border-gray-700 focus:border-yellow-500'}`}
+                className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-400/30 transition-all duration-200 ${errors[key] ? 'border-red-500 focus:border-red-400' : 'border-white/10 focus:border-cyan-400'}`}
                 {...props}
             />
             {errors[key] && <p className="text-xs text-red-400 mt-1">{errors[key]}</p>}
@@ -60,60 +130,78 @@ export default function NewUnit() {
     );
 
     return (
-        <div className="min-h-screen gradient-master dark-scroll">
-            <header className="border-b border-gray-800/50 px-6 py-4 flex items-center gap-4">
+        <div className="min-h-screen bg-[#0a0f1e]">
+            <header className="border-b border-white/5 px-6 py-4 flex items-center gap-4 bg-[#0d1225]/80 backdrop-blur-xl">
                 <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-xl">👁</div>
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center">
+                        <Building2 size={18} className="text-white" />
+                    </div>
                     <div>
-                        <p className="text-xs text-gray-500">ÓticaSystem</p>
+                        <p className="text-xs text-cyan-400/60">ÓticaSystem</p>
                         <p className="text-sm font-bold text-white">Master Admin</p>
                     </div>
                 </div>
             </header>
 
             <div className="p-6 max-w-2xl mx-auto">
-                <Link to="/master/unidades" className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-6 transition-colors">
+                <Link to="/master/unidades" className="flex items-center gap-2 text-white/40 hover:text-cyan-400 text-sm mb-6 transition-colors">
                     <ArrowLeft size={16} />
                     Voltar para Unidades
                 </Link>
 
-                <div className="bg-gray-900/60 border border-gray-800/50 rounded-2xl p-8">
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 backdrop-blur-sm shadow-2xl shadow-cyan-500/5">
                     <h1 className="text-2xl font-bold text-white mb-2">Nova Unidade</h1>
-                    <p className="text-gray-500 text-sm mb-8">Cadastre uma nova ótica no sistema (Acesso do usuário deve ser criado via painel Auth do Supabase separadamente).</p>
+                    <p className="text-white/40 text-sm mb-8">Cadastre uma nova ótica. O sistema criará automaticamente o usuário de acesso.</p>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             {field('name', 'Nome da Ótica', 'text', { placeholder: 'Ex: Ótica Leste' })}
                             {field('slug', 'Slug / Identificador', 'text', { placeholder: 'ex: otica-leste', onBlur: e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })) })}
-                            {field('email', 'E-mail Institucional', 'email', { placeholder: 'leste@otica.com' })}
+                            {field('email', 'E-mail de Acesso', 'email', { placeholder: 'leste@otica.com' })}
+                            <div>
+                                <label className="block text-sm font-medium text-cyan-300/80 mb-1.5">Senha de Acesso</label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={form.password}
+                                        onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setErrors(er => ({ ...er, password: '' })); }}
+                                        placeholder="Mínimo 6 caracteres"
+                                        className={`w-full bg-white/5 border rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-400/30 transition-all duration-200 ${errors.password ? 'border-red-500' : 'border-white/10 focus:border-cyan-400'}`}
+                                    />
+                                    <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-cyan-400 transition-colors">
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
+                            </div>
                             {field('city', 'Cidade', 'text', { placeholder: 'São Paulo' })}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Status</label>
+                            <label className="block text-sm font-medium text-cyan-300/80 mb-1.5">Status</label>
                             <select
                                 value={form.active}
                                 onChange={e => setForm(f => ({ ...f, active: e.target.value === 'true' }))}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500 transition-all"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/30 focus:border-cyan-400 transition-all"
                             >
                                 <option value="true">Ativa</option>
                                 <option value="false">Inativa</option>
                             </select>
                         </div>
 
+                        {step && (
+                            <div className="flex items-center gap-2 text-cyan-400 text-sm bg-cyan-400/10 border border-cyan-400/20 rounded-xl px-4 py-3">
+                                <span className="w-4 h-4 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
+                                {step}
+                            </div>
+                        )}
+
                         <div className="flex gap-3 pt-2">
-                            <Link
-                                to="/master/unidades"
-                                className="flex-1 text-center py-3 text-sm text-gray-400 border border-gray-700 hover:border-gray-500 hover:text-white rounded-xl transition-all"
-                            >
+                            <Link to="/master/unidades" className="flex-1 text-center py-3 text-sm text-white/50 border border-white/10 hover:border-white/30 hover:text-white rounded-xl transition-all">
                                 Cancelar
                             </Link>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="flex-1 py-3 text-sm font-bold bg-yellow-500 hover:bg-yellow-400 text-black rounded-xl transition-all shadow-lg disabled:opacity-60"
-                            >
-                                {loading ? 'Criando...' : 'Criar Unidade'}
+                            <button type="submit" disabled={loading} className="flex-1 py-3 text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-all shadow-lg shadow-cyan-500/25 disabled:opacity-60">
+                                {loading ? 'Criando...' : 'Criar Unidade + Usuário'}
                             </button>
                         </div>
                     </form>

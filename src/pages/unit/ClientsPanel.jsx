@@ -1,171 +1,119 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { clientService } from '../../services/clientService';
 import UnitLayout from '../../components/UnitLayout';
-import { Input, Select } from '../../components/ui';
-import { formatCurrency, getStatusStyle, STATUS_ORDER } from '../../utils/helpers';
-import { Search, Plus, Filter, Users, Eye } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
+
+const STATUS_FILTERS = ['Todos', 'Novo', 'Em Produção', 'Pronto', 'Entregue'];
 
 export default function ClientsPanel() {
     const { slug } = useParams();
     const { profile } = useAuthStore();
     const unitId = profile?.unit_id;
-    const [searchParams, setSearchParams] = useSearchParams();
 
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'Todos');
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Todos');
 
     useEffect(() => {
         if (!unitId) return;
-        async function loadClients() {
+        async function load() {
             setLoading(true);
-            const data = await clientService.getClients(unitId, {
-                status: statusFilter !== 'Todos' ? statusFilter : undefined,
-                name: searchTerm || undefined
-            });
+            const data = await clientService.getClients(unitId);
             setClients(data);
             setLoading(false);
         }
-        // Debounce search
-        const timeoutId = setTimeout(loadClients, 300);
-        return () => clearTimeout(timeoutId);
-    }, [unitId, searchTerm, statusFilter]);
+        load();
+    }, [unitId]);
 
-    // Update URL when filter changes
-    useEffect(() => {
-        if (statusFilter === 'Todos') {
-            searchParams.delete('status');
-        } else {
-            searchParams.set('status', statusFilter);
-        }
-        setSearchParams(searchParams, { replace: true });
-    }, [statusFilter, setSearchParams, searchParams]);
+    const filtered = clients.filter(c => {
+        const matchSearch = !search || c.client_name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search);
+        const matchStatus = statusFilter === 'Todos' || c.status === statusFilter;
+        return matchSearch && matchStatus;
+    });
 
     return (
         <UnitLayout slug={slug}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-                    <p className="text-gray-500 text-sm mt-1">Gerenciamento de clientes e pedidos</p>
+                    <h1 className="text-2xl font-bold text-white">Clientes</h1>
+                    <p className="text-white/30 text-sm mt-1">{filtered.length} resultado(s)</p>
                 </div>
-                <Link
-                    to={`/${slug}/clientes/novo`}
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all duration-200"
-                >
-                    <Plus size={18} />
-                    <span>Novo Cliente</span>
+                <Link to={`/${slug}/clientes/novo`} className="flex items-center gap-2 btn-primary text-sm px-4 py-2.5">
+                    <Plus size={16} /> Novo Atendimento
                 </Link>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Buscar por nome, telefone ou CPF..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 focus:bg-white transition-all"
-                        />
-                    </div>
-                    <div className="w-full md:w-64 flex items-center gap-3">
-                        <Filter className="text-gray-400" size={18} />
-                        <select
-                            value={statusFilter}
-                            onChange={e => setStatusFilter(e.target.value)}
-                            className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <div className="relative flex-1">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
+                    <input
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Buscar por nome ou telefone..."
+                        className="input-futuristic w-full pl-10"
+                    />
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                    {STATUS_FILTERS.map(s => (
+                        <button
+                            key={s}
+                            onClick={() => setStatusFilter(s)}
+                            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${statusFilter === s
+                                ? 'bg-cyan-400/15 text-cyan-400 border border-cyan-400/25'
+                                : 'text-white/30 hover:text-white/60 hover:bg-white/5 border border-transparent'
+                                }`}
                         >
-                            <option value="Todos">Todos os Status</option>
-                            {STATUS_ORDER.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                    </div>
+                            {s}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
-                {loading && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex items-center justify-center">
-                        <div className="flex items-center gap-2 text-indigo-600 font-medium bg-white px-4 py-2 rounded-xl shadow-lg">
-                            <span className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-                            Atualizando...
-                        </div>
-                    </div>
-                )}
-
-                <div className="overflow-x-auto min-h-[400px]">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50/80 border-b border-gray-100 hidden sm:table-row">
-                                <th className="py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cliente</th>
-                                <th className="py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Contato</th>
-                                <th className="py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {clients.length === 0 && !loading ? (
-                                <tr>
-                                    <td colSpan="4" className="py-16 text-center text-gray-400">
-                                        <Users size={40} className="mx-auto mb-3 opacity-20" />
-                                        <p className="text-base font-medium text-gray-600">Nenhum cliente encontrado</p>
-                                        {searchTerm || statusFilter !== 'Todos' ? (
-                                            <button onClick={() => { setSearchTerm(''); setStatusFilter('Todos'); }} className="text-sm text-indigo-500 hover:underline mt-1">Limpar filtros</button>
-                                        ) : (
-                                            <p className="text-sm">Cadastre o primeiro cliente da unidade</p>
-                                        )}
-                                    </td>
-                                </tr>
-                            ) : (
-                                clients.map(client => {
-                                    const style = getStatusStyle(client.status);
-                                    return (
-                                        <tr key={client.id} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="py-4 px-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0 bg-gradient-to-br from-indigo-400 to-purple-500">
-                                                        {client.name?.[0]?.toUpperCase() || '?'}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-900 leading-none mb-1">{client.name}</p>
-                                                        <p className="text-xs text-gray-400 truncate sm:w-auto w-32">{new Date(client.created_at).toLocaleDateString('pt-BR')}</p>
-                                                    </div>
-                                                </div>
-                                                {/* Mobile only content */}
-                                                <div className="sm:hidden mt-2 flex flex-col gap-1">
-                                                    <p className="text-xs text-gray-500">{client.phone || client.email}</p>
-                                                    <div className="flex items-center justify-between mt-1">
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border leading-none" style={{ background: style.bg, color: style.color, borderColor: style.border }}>{client.status}</span>
-                                                        <span className="text-sm font-bold text-gray-700">{formatCurrency(client.total_value)}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-5 hidden md:table-cell">
-                                                <p className="text-sm text-gray-800">{client.phone || '-'}</p>
-                                                <p className="text-xs text-gray-400">{client.email || '-'}</p>
-                                            </td>
-                                            <td className="py-4 px-5 hidden sm:table-cell">
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border" style={{ background: style.bg, color: style.color, borderColor: style.border }}>
-                                                    {client.status}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-5 text-right">
-                                                <Link to={`/${slug}/clientes/${client.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors">
-                                                    <Eye size={16} />
-                                                    <span className="hidden sm:inline">Detalhes</span>
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+            {/* Clients list */}
+            {loading ? (
+                <div className="flex items-center justify-center h-48">
+                    <div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" />
                 </div>
-            </div>
+            ) : filtered.length === 0 ? (
+                <div className="text-center py-16 text-white/20">
+                    <div className="text-5xl mb-4">🔍</div>
+                    <p className="text-lg font-medium">Nenhum cliente encontrado</p>
+                    <p className="text-sm mt-1">Ajuste os filtros ou cadestre um novo atendimento</p>
+                </div>
+            ) : (
+                <div className="grid gap-3">
+                    {filtered.map(c => (
+                        <Link key={c.id} to={`/${slug}/clientes/${c.id}`} className="glass-card p-4 group block hover:border-cyan-400/15">
+                            <div className="flex items-center gap-4">
+                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400/15 to-purple-500/15 border border-white/[0.06] flex items-center justify-center text-white font-bold flex-shrink-0">
+                                    {c.client_name?.[0]?.toUpperCase() || '?'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="text-sm font-semibold text-white/80 group-hover:text-white">{c.client_name}</p>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${c.status === 'Entregue' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' :
+                                                c.status === 'Pronto' ? 'bg-purple-500/15 text-purple-400 border-purple-500/25' :
+                                                    c.status === 'Em Produção' ? 'bg-amber-500/12 text-amber-400 border-amber-500/20' :
+                                                        c.status === 'Novo' ? 'bg-red-500/15 text-red-400 border-red-500/25' :
+                                                            'bg-white/5 text-white/30 border-white/10'
+                                            }`}>{c.status}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 mt-1">
+                                        <p className="text-xs text-white/25">{c.phone || 'Sem telefone'}</p>
+                                        <p className="text-xs text-white/25">{c.lens_type || 'Sem lente'}</p>
+                                        {c.total_value && <p className="text-xs text-emerald-400/70 font-medium">R$ {Number(c.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
+                                    </div>
+                                </div>
+                                <span className="text-white/15 group-hover:text-cyan-400/50 transition-colors text-sm">→</span>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            )}
         </UnitLayout>
     );
 }
