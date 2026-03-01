@@ -33,8 +33,11 @@ function RequireMaster({ children }) {
 
 function RequireUnit({ children }) {
   const { profile, loading } = useAuthStore();
+  const location = window.location;
+  // Extract slug from path like /:slug/dashboard → redirect to /:slug/login
+  const slug = location.pathname.split('/')[1] || '';
   if (loading) return <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center"><div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" /></div>;
-  if (!profile || profile.role !== 'unit') return <Navigate to="/" replace />;
+  if (!profile || profile.role !== 'unit') return <Navigate to={`/${slug}/login`} replace />;
   return children;
 }
 
