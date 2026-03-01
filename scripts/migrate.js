@@ -307,6 +307,25 @@ create policy "appointments_policy" on public.appointments    for all using (pub
 create policy "goals_policy"        on public.unit_goals      for all using (public.my_role()='master' or unit_id=public.my_unit_id());
 create policy "settings_policy"     on public.unit_settings   for all using (public.my_role()='master' or unit_id=public.my_unit_id());
 create policy "audit_policy"        on public.audit_logs      for select using (public.my_role()='master' or unit_id=public.my_unit_id());
+
+-- ═══ GRANTS ═══
+grant usage on schema public to authenticated;
+grant select on public.unit_summary to authenticated;
+grant select, insert, update, delete on public.units to authenticated;
+grant select, insert, update, delete on public.clients to authenticated;
+grant select, insert, update, delete on public.profiles to authenticated;
+grant select, insert on public.status_history to authenticated;
+grant select, insert, update on public.notifications to authenticated;
+grant select, insert, update, delete on public.automations to authenticated;
+grant select, insert on public.automation_logs to authenticated;
+grant select, insert, update, delete on public.appointments to authenticated;
+grant select, insert, update, delete on public.unit_goals to authenticated;
+grant select, insert, update, delete on public.unit_settings to authenticated;
+grant select, insert on public.audit_logs to authenticated;
+grant usage on schema public to anon;
+grant select on public.clients to anon;
+grant select on public.units to anon;
+grant select on public.unit_settings to anon;
 `;
 
 async function runMigration() {

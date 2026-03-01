@@ -4,12 +4,14 @@ export const automationService = {
     async getAll(unitId = null) {
         let q = supabase.from('automations').select('*, units(name, slug)').order('created_at', { ascending: false });
         if (unitId) q = q.eq('unit_id', unitId);
-        const { data } = await q;
+        const { data, error } = await q;
+        if (error) console.error('ERRO automations.getAll:', error);
         return data || [];
     },
 
     async getById(id) {
-        const { data } = await supabase.from('automations').select('*').eq('id', id).single();
+        const { data, error } = await supabase.from('automations').select('*').eq('id', id).single();
+        if (error) console.error('ERRO automations.getById:', error);
         return data;
     },
 
@@ -42,15 +44,17 @@ export const automationService = {
         if (filters.unitId) q = q.eq('unit_id', filters.unitId);
         if (filters.automationId) q = q.eq('automation_id', filters.automationId);
         if (filters.status) q = q.eq('status', filters.status);
-        const { data, count } = await q;
+        const { data, count, error } = await q;
+        if (error) console.error('ERRO automation_logs.getLogs:', error);
         return { data: data || [], total: count || 0 };
     },
 
     async getRecentLogs(limit = 10) {
-        const { data } = await supabase.from('automation_logs')
+        const { data, error } = await supabase.from('automation_logs')
             .select('*, automations(name, units(name))')
             .order('created_at', { ascending: false })
             .limit(limit);
+        if (error) console.error('ERRO automation_logs.getRecentLogs:', error);
         return data || [];
     },
 
