@@ -330,6 +330,9 @@ grant select on public.unit_settings to anon;
 -- ═══ UNITS EXTRA COLUMNS ═══
 alter table public.units add column if not exists whatsapp text;
 
+-- ═══ AUTOMATIONS EXTRA COLUMNS ═══
+alter table public.automations add column if not exists delay_minutes integer default 0;
+
 -- ═══ FIX EMAIL CONFIRMATION ═══
 -- Confirms any users whose emails are still unverified so they can log in.
 update auth.users
