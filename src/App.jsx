@@ -18,6 +18,7 @@ import ClientsPanel from './pages/unit/ClientsPanel';
 import ClientForm from './pages/unit/ClientForm';
 import ClientDetails from './pages/unit/ClientDetails';
 import CRMPage from './pages/unit/CRMPage';
+import CRMKanban from './pages/unit/CRMKanban';
 import FinancialPage from './pages/unit/FinancialPage';
 import AppointmentsPage from './pages/unit/AppointmentsPage';
 
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="/:slug/clientes/novo" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id/editar" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id" element={<RequireUnit><ClientDetails /></RequireUnit>} />
+        <Route path="/:slug/pipeline" element={<RequireUnit><CRMKanban /></RequireUnit>} />
         <Route path="/:slug/crm" element={<RequireUnit><CRMPage /></RequireUnit>} />
         <Route path="/:slug/financeiro" element={<RequireUnit><FinancialPage /></RequireUnit>} />
         <Route path="/:slug/agendamentos" element={<RequireUnit><AppointmentsPage /></RequireUnit>} />

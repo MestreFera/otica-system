@@ -5,7 +5,7 @@ import { appointmentService } from '../services/appointmentService';
 import {
     LayoutDashboard, Users, LogOut, Menu, X, Bell, ChevronRight,
     Scan, DollarSign, Calendar, Search, Settings, Package,
-    FileText, BarChart2, ShoppingBag
+    FileText, BarChart2, ShoppingBag, KanbanSquare
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -36,10 +36,11 @@ export default function UnitLayout({ children, slug }) {
 
     const nav = [
         { to: `/${slug}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
+        { to: `/${slug}/pipeline`, label: 'CRM Pipeline', icon: KanbanSquare },
         { to: `/${slug}/clientes`, label: 'Clientes', icon: Users },
         { to: `/${slug}/agendamentos`, label: 'Agendamentos', icon: Calendar, badge: todayCount || null },
         { to: `/${slug}/financeiro`, label: 'Financeiro', icon: DollarSign },
-        { to: `/${slug}/crm`, label: 'CRM & Relatórios', icon: BarChart2 },
+        { to: `/${slug}/crm`, label: 'Relatórios (Analytics)', icon: BarChart2 },
     ];
 
     async function handleLogout() {

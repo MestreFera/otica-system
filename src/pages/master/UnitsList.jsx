@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { unitService } from '../../services/unitService';
 import { formatCurrency } from '../../utils/helpers';
-import { Plus, LogOut, Power, Eye, Send, Scan, Pencil, Trash2, X, AlertTriangle, TrendingUp, Building2, Zap } from 'lucide-react';
+import { Plus, LogOut, Power, Eye, Send, Scan, Pencil, Trash2, X, AlertTriangle, TrendingUp, Building2, Zap, Terminal } from 'lucide-react';
 
 // ─── Reusable input style ─────────────────────────────────────────────────────
 const inp = `w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all duration-200 text-sm`;
@@ -77,6 +77,105 @@ function EditModal({ unit, onClose, onSaved }) {
     );
 }
 
+// ─── Canvas Deploy Modal ───────────────────────────────────────────────────────
+function DeployModal({ onClose, onDeployed }) {
+    const [form, setForm] = useState({ name: '', slug: '', webhook: '' });
+    const [status, setStatus] = useState('idle'); // idle -> deploying -> done
+    const [logs, setLogs] = useState([]);
+
+    const runDeploySequence = async () => {
+        setStatus('deploying');
+        const appendLog = (msg, time = 600) => new Promise(res => {
+            setTimeout(() => { setLogs(l => [...l, msg]); res(); }, time);
+        });
+
+        await appendLog('> Initializing Database... [OK]');
+        await appendLog('> Allocating storage buckets... [OK]');
+
+        // Simulating actual API call conceptually
+        const { success, data, error } = await unitService.createUnit({
+            name: form.name,
+            slug: form.slug.toLowerCase().replace(/\s+/g, '-'),
+            active: true
+        });
+
+        if (!success) {
+            await appendLog(`> ERROR: ${error}`);
+            setStatus('idle');
+            return;
+        }
+
+        await appendLog('> Deploying AI Agents... [OK]');
+        await appendLog(`> Connecting n8n Webhook: ${form.webhook || 'Skipped'}... [OK]`);
+        await appendLog('> Setting up CRM Pipelines... [OK]');
+        await appendLog('> System Online. Access Granted.', 1000);
+
+        setStatus('done');
+        setTimeout(() => {
+            onDeployed(data);
+            onClose();
+        }, 1500);
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => status === 'idle' && onClose()} />
+
+            <div className="relative border border-white/10 rounded-xl p-[1px] w-full max-w-lg shadow-2xl animate-on-scroll overflow-hidden">
+                {/* Canvas borders if deploying */}
+                {status === 'deploying' && (
+                    <>
+                        <div className="beam-border-h"></div>
+                        <div className="beam-border-v"></div>
+                    </>
+                )}
+
+                <div className="bg-[#0A0A0A] p-8 rounded-xl relative z-10 font-mono">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                            <Terminal className="text-[#F97316]" size={20} />
+                            <h3 className="text-lg font-bold text-white uppercase tracking-widest leading-none">Deploy Unit</h3>
+                        </div>
+                        {status === 'idle' && <button onClick={onClose} className="text-white/30 hover:text-[#F97316] transition-colors"><X size={20} /></button>}
+                    </div>
+
+                    {status === 'idle' ? (
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-xs uppercase tracking-widest text-neutral-500 mb-2">Unit Name</label>
+                                <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: MegaVision Center" className="input-canvas" />
+                            </div>
+                            <div>
+                                <label className="block text-xs uppercase tracking-widest text-neutral-500 mb-2">System Slug</label>
+                                <input type="text" value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="ex: megavision" className="input-canvas" />
+                            </div>
+                            <div>
+                                <label className="block text-xs uppercase tracking-widest text-neutral-500 mb-2">n8n Webhook URL (Optional)</label>
+                                <input type="url" value={form.webhook} onChange={e => setForm(f => ({ ...f, webhook: e.target.value }))} placeholder="https://n8n.domain.com/webhook/..." className="input-canvas" />
+                            </div>
+
+                            <button onClick={runDeploySequence} disabled={!form.name || !form.slug} className="btn-canvas w-full mt-6 !py-3">
+                                <span className="corner-accent corner-tl"></span><span className="corner-accent corner-tr"></span>
+                                <span className="corner-accent corner-bl"></span><span className="corner-accent corner-br"></span>
+                                <span className="text-sm font-bold tracking-wider uppercase">Execute Deploy</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-black border border-white/5 rounded-md p-4 h-48 overflow-y-auto text-xs text-emerald-400 space-y-1.5 leading-relaxed">
+                            {logs.map((l, i) => (
+                                <div key={i} className="animate-fadeIn">{l}</div>
+                            ))}
+                            {status === 'deploying' && (
+                                <div className="animate-pulse">_</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Delete Confirmation Modal ────────────────────────────────────────────────
 function DeleteModal({ unit, onClose, onDeleted }) {
     const [deleting, setDeleting] = useState(false);
@@ -130,6 +229,7 @@ export default function UnitsList() {
     const [loading, setLoading] = useState(true);
     const [editTarget, setEditTarget] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deployOpen, setDeployOpen] = useState(false);
 
     useEffect(() => { loadData(); }, []);
 
@@ -188,12 +288,16 @@ export default function UnitsList() {
             <div className="p-5 lg:p-8 max-w-[1440px] mx-auto animate-fadeIn">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">Gerenciar <span style={{ color: 'var(--accent)' }}>Unidades</span></h1>
-                        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{units.length} unidade(s) cadastrada(s)</p>
+                        <h1 className="text-3xl font-black text-white tracking-tight uppercase" style={{ fontFamily: 'var(--font-sans)' }}>System <span className="text-[#F97316]">Nodes</span></h1>
+                        <p className="text-xs uppercase font-mono tracking-widest mt-2 text-neutral-500">{units.length} unit(s) deployed</p>
                     </div>
-                    <Link to="/master/unidades/nova" className="btn-primary flex items-center gap-2 text-xs px-5 py-2.5">
-                        <Plus size={16} /> Nova Unidade
-                    </Link>
+                    <button onClick={() => setDeployOpen(true)} className="btn-canvas">
+                        <span className="corner-accent corner-tl"></span>
+                        <span className="corner-accent corner-tr"></span>
+                        <span className="corner-accent corner-bl"></span>
+                        <span className="corner-accent corner-br"></span>
+                        <Plus size={16} /> New Node Deployment
+                    </button>
                 </div>
 
                 {loading ? (
@@ -307,6 +411,14 @@ export default function UnitsList() {
                     unit={deleteTarget}
                     onClose={() => setDeleteTarget(null)}
                     onDeleted={id => setUnits(prev => prev.filter(u => u.id !== id))}
+                />
+            )}
+
+            {/* Canvas Deploy Modal */}
+            {deployOpen && (
+                <DeployModal
+                    onClose={() => setDeployOpen(false)}
+                    onDeployed={newUnit => setUnits(prev => [newUnit, ...prev])}
                 />
             )}
         </div>
