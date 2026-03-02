@@ -24,23 +24,33 @@ const useAuthStore = create((set, get) => ({
     init: async () => {
         set({ loading: true });
 
-        const { data: { session } } = await supabase.auth.getSession();
+        // First attempt to grab current session from Supabase local storage memory
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-        let profile = null;
-        if (session?.user) {
-            profile = await loadProfile(session.user.id);
+        if (error || !session) {
+            set({ session: null, user: null, profile: null, loading: false });
+        } else {
+            const profile = await loadProfile(session.user.id);
+            set({ session, user: session.user, profile, loading: false });
         }
 
-        set({ session, user: session?.user || null, profile, loading: false });
+        // Listen for all future auth changes (login, logout, token refresh)
+        supabase.auth.onAuthStateChange(async (event, newSession) => {
+            console.log('🔄 Auth State Changed:', event);
 
-        supabase.auth.onAuthStateChange(async (_event, newSession) => {
+            if (event === 'SIGNED_OUT' || !newSession) {
+                set({ session: null, user: null, profile: null, loading: false });
+                return;
+            }
+
+            // Only reload profile if user ID changed to avoid unnecessary fetches on TOKEN_REFRESH
             const currentSession = get().session;
-            if (currentSession?.access_token !== newSession?.access_token) {
-                let newProfile = null;
-                if (newSession?.user) {
-                    newProfile = await loadProfile(newSession.user.id);
-                }
-                set({ session: newSession, user: newSession?.user || null, profile: newProfile });
+            if (!currentSession || currentSession.user.id !== newSession.user.id) {
+                set({ loading: true });
+                const newProfile = await loadProfile(newSession.user.id);
+                set({ session: newSession, user: newSession.user, profile: newProfile, loading: false });
+            } else {
+                set({ session: newSession, user: newSession.user }); // Just update tokens, profile remains
             }
         });
     },

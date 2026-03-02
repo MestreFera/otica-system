@@ -793,6 +793,19 @@ select.input-futuristic option {
   animation: fadeSlideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ── Custom Utilities for Neural Core ── */
+.animate-beam-fast {
+  animation: beam-slide 1.5s infinite linear;
+}
+
+.animate-spin-slow {
+  animation: spin 8s infinite linear;
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* ── System Card (Canvas) ── */
 .canvas-card {
   background: rgba(10, 10, 10, 0.8);

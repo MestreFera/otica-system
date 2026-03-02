@@ -27,7 +27,16 @@ import ClientStatusPage from './pages/public/ClientStatusPage';
 
 function RequireMaster({ children }) {
   const { profile, loading } = useAuthStore();
-  if (loading) return <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center"><div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" /></div>;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 font-mono">
+        <div className="w-12 h-12 border-2 border-[#F97316]/20 border-t-[#F97316] rounded-full animate-spin mb-4" />
+        <p className="text-xs uppercase tracking-widest text-[#F97316] animate-pulse">Authenticating Master Session...</p>
+      </div>
+    );
+  }
+
   if (!profile || profile.role !== 'master') return <Navigate to="/master/login" replace />;
   return children;
 }
@@ -35,18 +44,38 @@ function RequireMaster({ children }) {
 function RequireUnit({ children }) {
   const { profile, loading } = useAuthStore();
   const location = window.location;
-  // Extract slug from path like /:slug/dashboard → redirect to /:slug/login
   const slug = location.pathname.split('/')[1] || '';
-  if (loading) return <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center"><div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" /></div>;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 font-mono">
+        <div className="w-12 h-12 border-2 border-[#F97316]/20 border-t-[#F97316] rounded-full animate-spin mb-4" />
+        <p className="text-xs uppercase tracking-widest text-[#F97316] animate-pulse">Initializing Node Environment...</p>
+      </div>
+    );
+  }
+
   if (!profile || profile.role !== 'unit') return <Navigate to={`/${slug}/login`} replace />;
+  if (profile.units?.slug !== slug) return <Navigate to={`/${profile.units.slug}/dashboard`} replace />;
+
   return children;
 }
 
 function RootRedirect() {
   const { profile, loading } = useAuthStore();
-  if (loading) return <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center"><div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" /></div>;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 font-mono">
+        <div className="w-12 h-12 border-2 border-white/10 border-t-white/80 rounded-full animate-spin mb-4" />
+        <p className="text-xs uppercase tracking-widest text-neutral-500 animate-pulse">Establishing Secure Connection...</p>
+      </div>
+    );
+  }
+
   if (profile?.role === 'master') return <Navigate to="/master/dashboard" replace />;
   if (profile?.role === 'unit' && profile.units) return <Navigate to={`/${profile.units.slug}/dashboard`} replace />;
+
   return <Navigate to="/master/login" replace />;
 }
 

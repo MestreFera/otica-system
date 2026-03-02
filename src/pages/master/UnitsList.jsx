@@ -252,40 +252,43 @@ export default function UnitsList() {
     }
 
     return (
-        <div className="min-h-screen gradient-master dark-scroll">
-            <header className="sticky top-0 z-20 px-5 lg:px-8 py-3.5 flex items-center gap-4 backdrop-blur-xl" style={{ background: 'rgba(11, 11, 15, 0.85)', borderBottom: '1px solid var(--border)' }}>
-                <div className="flex items-center gap-3">
-                    <div className="logo-icon"><Scan size={18} className="text-[#0B0B0F]" /></div>
-                    <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: 'var(--accent)' }}>ÓticaSystem</p>
-                        <p className="text-sm font-bold text-white">Painel Master</p>
+        <div className="min-h-screen bg-[#050505] canvas-bg-wrapper text-neutral-300 font-sans selection:bg-[#F97316]/30 selection:text-white flex flex-col overflow-x-hidden">
+            <div className="grid-bg"></div>
+            <div className="aura-glow"></div>
+
+            {/* ── Header (Floating Glass) ── */}
+            <header className="sticky top-4 z-40 mx-4 lg:mx-8 px-6 py-4 flex items-center justify-between rounded-2xl backdrop-blur-2xl border border-white/10 bg-black/60 shadow-2xl">
+                <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-sm bg-[#111] border border-white/10 flex items-center justify-center text-[#F97316]">
+                        <Scan size={16} />
+                    </div>
+                    <div className="hidden sm:block">
+                        <p className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#F97316]">ÓticaSystem</p>
+                        <p className="text-sm font-bold text-white leading-tight">Master Control Node</p>
                     </div>
                 </div>
 
-                <nav className="flex items-center gap-1 ml-6">
-                    <Link to="/master/dashboard" className="nav-item text-xs px-3.5 py-2">
+                <nav className="flex items-center gap-2 flex-1 justify-center sm:justify-start sm:ml-8 font-mono">
+                    <Link to="/master/dashboard" className="px-3 py-2 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-white/[0.02] flex items-center gap-2 transition-all">
                         <TrendingUp size={14} /> Dashboard
                     </Link>
-                    <Link to="/master/unidades" className="nav-item active text-xs px-3.5 py-2">
-                        <Building2 size={14} /> Unidades
+                    <Link to="/master/unidades" className="px-3 py-2 rounded-lg text-xs font-bold transition-all bg-white/5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] flex items-center gap-2">
+                        <Building2 size={14} className="text-[#F97316] drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" /> Nodes
                     </Link>
-                    <Link to="/master/automations" className="nav-item text-xs px-3.5 py-2">
-                        <Zap size={14} /> Automações
+                    <Link to="/master/automations" className="px-3 py-2 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-white/[0.02] flex items-center gap-2 transition-all">
+                        <Zap size={14} /> Automations
                     </Link>
                 </nav>
 
-                <div className="flex-1" />
-
-                <button onClick={async () => { await logout(); navigate('/master/login'); }}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg transition-all"
-                    style={{ color: 'rgba(239, 68, 68, 0.6)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#f87171'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(239,68,68,0.6)'; }}>
-                    <LogOut size={15} /> Sair
-                </button>
+                <div className="flex items-center gap-3 font-mono">
+                    <button onClick={async () => { await logout(); navigate('/master/login'); }}
+                        className="flex items-center gap-2 px-3 py-2 text-[11px] font-bold tracking-widest uppercase rounded-lg border border-red-500/20 text-red-500/80 hover:bg-red-500/10 hover:text-red-400 transition-all ml-2">
+                        <LogOut size={14} /> Disconnect
+                    </button>
+                </div>
             </header>
 
-            <div className="p-5 lg:p-8 max-w-[1440px] mx-auto animate-fadeIn">
+            <main className="flex-1 p-4 lg:p-8 max-w-[1440px] w-full mx-auto relative z-10">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-black text-white tracking-tight uppercase" style={{ fontFamily: 'var(--font-sans)' }}>System <span className="text-[#F97316]">Nodes</span></h1>
@@ -367,60 +370,59 @@ export default function UnitsList() {
                         ))}
                     </div>
                 )}
-            </div>
-
-            {/* Notification modal */}
-            {notification.open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setNotification(n => ({ ...n, open: false }))} />
-                    <div className="relative border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn" style={{ background: '#0B0B0F' }}>
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-5" style={{ color: 'var(--info)' }}>Enviar Notificação</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Destinatário</label>
-                                <select value={notification.target} onChange={e => setNotification(n => ({ ...n, target: e.target.value }))} className={inp}>
-                                    <option value="all">Todas as unidades</option>
-                                    {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Mensagem</label>
-                                <textarea value={notification.message} onChange={e => setNotification(n => ({ ...n, message: e.target.value }))} placeholder="Digite..." rows={3} className={`${inp} resize-none`} />
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setNotification(n => ({ ...n, open: false }))} className="btn-ghost flex-1">Cancelar</button>
-                                <button onClick={handleSend} className="btn-primary flex-1" style={{ background: 'var(--info)' }}>Enviar</button>
+                {/* Notification modal */}
+                {notification.open && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setNotification(n => ({ ...n, open: false }))} />
+                        <div className="relative border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn" style={{ background: '#0B0B0F' }}>
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-5" style={{ color: 'var(--info)' }}>Enviar Notificação</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Destinatário</label>
+                                    <select value={notification.target} onChange={e => setNotification(n => ({ ...n, target: e.target.value }))} className={inp}>
+                                        <option value="all">Todas as unidades</option>
+                                        {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Mensagem</label>
+                                    <textarea value={notification.message} onChange={e => setNotification(n => ({ ...n, message: e.target.value }))} placeholder="Digite..." rows={3} className={`${inp} resize-none`} />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setNotification(n => ({ ...n, open: false }))} className="btn-ghost flex-1">Cancelar</button>
+                                    <button onClick={handleSend} className="btn-primary flex-1" style={{ background: 'var(--info)' }}>Enviar</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Edit modal */}
-            {editTarget && (
-                <EditModal
-                    unit={editTarget}
-                    onClose={() => setEditTarget(null)}
-                    onSaved={updated => setUnits(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u))}
-                />
-            )}
+                {/* Edit modal */}
+                {editTarget && (
+                    <EditModal
+                        unit={editTarget}
+                        onClose={() => setEditTarget(null)}
+                        onSaved={updated => setUnits(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u))}
+                    />
+                )}
 
-            {/* Delete confirmation modal */}
-            {deleteTarget && (
-                <DeleteModal
-                    unit={deleteTarget}
-                    onClose={() => setDeleteTarget(null)}
-                    onDeleted={id => setUnits(prev => prev.filter(u => u.id !== id))}
-                />
-            )}
+                {/* Delete confirmation modal */}
+                {deleteTarget && (
+                    <DeleteModal
+                        unit={deleteTarget}
+                        onClose={() => setDeleteTarget(null)}
+                        onDeleted={id => setUnits(prev => prev.filter(u => u.id !== id))}
+                    />
+                )}
 
-            {/* Canvas Deploy Modal */}
-            {deployOpen && (
-                <DeployModal
-                    onClose={() => setDeployOpen(false)}
-                    onDeployed={newUnit => setUnits(prev => [newUnit, ...prev])}
-                />
-            )}
+                {/* Canvas Deploy Modal */}
+                {deployOpen && (
+                    <DeployModal
+                        onClose={() => setDeployOpen(false)}
+                        onDeployed={newUnit => setUnits(prev => [newUnit, ...prev])}
+                    />
+                )}
+            </main>
         </div>
     );
 }
