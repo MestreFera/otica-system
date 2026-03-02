@@ -102,6 +102,13 @@ CREATE TABLE IF NOT EXISTS clients (
     updated_at      TIMESTAMPTZ DEFAULT now()
 );
 
+-- Safely add columns if the table ALREADY existed before today
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS status_ia TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS etapa_fluxo TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS ultima_interacao TIMESTAMPTZ;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS ultima_mensagem TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS public_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex');
+
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_clients_unit_id ON clients(unit_id);
 CREATE INDEX IF NOT EXISTS idx_clients_status ON clients(status);
@@ -238,6 +245,8 @@ CREATE TABLE IF NOT EXISTS unit_settings (
 -- ============================================================================
 -- 11. VIEW: unit_summary — Aggregated metrics for the Master Dashboard
 -- ============================================================================
+DROP VIEW IF EXISTS unit_summary;
+
 CREATE OR REPLACE VIEW unit_summary AS
 SELECT
     u.id,
