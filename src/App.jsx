@@ -21,6 +21,8 @@ import CRMPage from './pages/unit/CRMPage';
 import CRMKanban from './pages/unit/CRMKanban';
 import FinancialPage from './pages/unit/FinancialPage';
 import AppointmentsPage from './pages/unit/AppointmentsPage';
+import AgentePage from './pages/unit/AgentePage';
+import WhatsAppConfig from './pages/unit/WhatsAppConfig';
 
 // Public Pages
 import ClientStatusPage from './pages/public/ClientStatusPage';
@@ -105,8 +107,8 @@ export default function App() {
         <Route path="/:slug/dashboard" element={<RequireUnit><UnitDashboard /></RequireUnit>} />
 
         {/* Core AI & Comms */}
-        <Route path="/:slug/agente" element={<RequireUnit><CRMPage /></RequireUnit>} />
-        <Route path="/:slug/whatsapp" element={<RequireUnit><CRMPage /></RequireUnit>} />
+        <Route path="/:slug/agente" element={<RequireUnit><AgentePage /></RequireUnit>} />
+        <Route path="/:slug/whatsapp" element={<RequireUnit><WhatsAppConfig /></RequireUnit>} />
         <Route path="/:slug/pipeline" element={<RequireUnit><CRMKanban /></RequireUnit>} />
 
         {/* Operations */}
