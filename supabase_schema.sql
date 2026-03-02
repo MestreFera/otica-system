@@ -92,6 +92,9 @@ CREATE TABLE IF NOT EXISTS clients (
     -- AI / CRM pipeline columns
     status_ia         TEXT,
     etapa_fluxo       TEXT,
+    status_followup   TEXT,
+    encerrado_followup BOOLEAN DEFAULT false,
+    telefone_cliente  TEXT,
     ultima_interacao  TIMESTAMPTZ,
     ultima_mensagem   TEXT,
 
@@ -105,6 +108,9 @@ CREATE TABLE IF NOT EXISTS clients (
 -- Safely add columns if the table ALREADY existed before today
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS status_ia TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS etapa_fluxo TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS status_followup TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS encerrado_followup BOOLEAN DEFAULT false;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS telefone_cliente TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS ultima_interacao TIMESTAMPTZ;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS ultima_mensagem TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS public_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex');
@@ -243,7 +249,69 @@ CREATE TABLE IF NOT EXISTS unit_settings (
 );
 
 -- ============================================================================
--- 11. VIEW: unit_summary — Aggregated metrics for the Master Dashboard
+-- 11. UNIT_INTEGRATIONS — External API keys per unit (ex: WhatsApp Z-API)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS unit_integrations (
+    id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    unit_id           UUID NOT NULL UNIQUE REFERENCES units(id) ON DELETE CASCADE,
+    provider          TEXT DEFAULT 'Z-API',
+    send_text_url     TEXT,
+    client_token      TEXT,
+    api_url           TEXT,
+    instance_id       TEXT,
+    instance_token    TEXT,
+    created_at        TIMESTAMPTZ DEFAULT now(),
+    updated_at        TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- 12. UNIT_AI_SETTINGS — AI Agent prompts and configurations per unit
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS unit_ai_settings (
+    id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    unit_id           UUID NOT NULL UNIQUE REFERENCES units(id) ON DELETE CASCADE,
+    -- Identity
+    agent_name        TEXT DEFAULT 'Bia',
+    agent_gender      TEXT DEFAULT 'Feminino',
+    agent_role        TEXT DEFAULT 'Especialista em Saúde Visual',
+    agent_personality TEXT,
+    use_emojis        BOOLEAN DEFAULT true,
+    
+    -- Unit Info Context
+    unit_address      TEXT,
+    unit_neighborhood TEXT,
+    unit_city         TEXT,
+    unit_state        TEXT,
+    unit_zip          TEXT,
+    unit_references   TEXT,
+    unit_phones       TEXT,
+    regional_context  TEXT,
+    parking_info      TEXT,
+    transport_info    TEXT,
+
+    -- Hours
+    hours_weekdays    TEXT DEFAULT '09:00 as 18:00',
+    hours_saturday    TEXT DEFAULT '09:00 as 13:00',
+    hours_sunday      TEXT DEFAULT 'Fechado',
+    hours_lunch       TEXT DEFAULT 'Sem pausa para almoço',
+
+    -- Service & Pricing
+    service_name      TEXT DEFAULT 'Exame de Vista',
+    service_duration  TEXT DEFAULT '20 minutos',
+    service_free      BOOLEAN DEFAULT false,
+    service_desc      TEXT,
+    price_min         NUMERIC(10,2),
+    price_max         NUMERIC(10,2),
+    price_text        TEXT,
+
+    team_members      JSONB DEFAULT '[]', -- JSON array of { name, role }
+
+    created_at        TIMESTAMPTZ DEFAULT now(),
+    updated_at        TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- 13. VIEW: unit_summary — Aggregated metrics for the Master Dashboard
 -- ============================================================================
 DROP VIEW IF EXISTS unit_summary;
 
@@ -297,6 +365,8 @@ ALTER TABLE notifications    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unit_goals       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unit_settings    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unit_integrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unit_ai_settings ENABLE ROW LEVEL SECURITY;
 
 -- Helper function: get the role of the current authenticated user
 CREATE OR REPLACE FUNCTION public.get_my_role()
@@ -424,6 +494,24 @@ CREATE POLICY "Units see own settings" ON unit_settings FOR SELECT
 DROP POLICY IF EXISTS "Public read settings" ON unit_settings;
 CREATE POLICY "Public read settings" ON unit_settings FOR SELECT
     USING (true);
+
+-- ── UNIT_INTEGRATIONS ──
+DROP POLICY IF EXISTS "Masters manage all integrations" ON unit_integrations;
+CREATE POLICY "Masters manage all integrations" ON unit_integrations FOR ALL
+    USING (public.get_my_role() = 'master');
+
+DROP POLICY IF EXISTS "Units manage own integrations" ON unit_integrations;
+CREATE POLICY "Units manage own integrations" ON unit_integrations FOR ALL
+    USING (unit_id = public.get_my_unit_id());
+
+-- ── UNIT_AI_SETTINGS ──
+DROP POLICY IF EXISTS "Masters manage all ai settings" ON unit_ai_settings;
+CREATE POLICY "Masters manage all ai settings" ON unit_ai_settings FOR ALL
+    USING (public.get_my_role() = 'master');
+
+DROP POLICY IF EXISTS "Units manage own ai settings" ON unit_ai_settings;
+CREATE POLICY "Units manage own ai settings" ON unit_ai_settings FOR ALL
+    USING (unit_id = public.get_my_unit_id());
 
 
 -- ╔══════════════════════════════════════════════════════════════════════════════╗

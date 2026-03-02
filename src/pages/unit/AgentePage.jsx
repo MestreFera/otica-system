@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import UnitLayout from '../../components/UnitLayout';
 import { useParams } from 'react-router-dom';
-import { Bot, Save, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, Eye } from 'lucide-react';
+import { Bot, Save, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, Eye, Loader2 } from 'lucide-react';
+import { unitService } from '../../services/unitService';
+import { aiAgentService } from '../../services/aiAgentService';
 
 const inp = `w-full bg-[#0A0A0A] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all duration-200 text-sm`;
 const labelClass = `block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5 text-neutral-500`;
@@ -33,6 +35,10 @@ function Accordion({ title, icon: Icon, defaultOpen = false, children }) {
 
 export default function AgentePage() {
     const { slug } = useParams();
+
+    // API loading state
+    const [unitId, setUnitId] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     // Identidade do Agente
@@ -83,16 +89,126 @@ export default function AgentePage() {
         gratuitoDuracao: '30 a 60 minutos'
     });
 
-    // Putaços
+    // Preços
     const [precos, setPrecos] = useState({
         minimo: '0',
         maximo: '0',
         texto: ''
     });
 
+    useEffect(() => {
+        async function load() {
+            setLoading(true);
+            const unit = await unitService.getUnitBySlug(slug);
+            if (unit) {
+                setUnitId(unit.id);
+                // Pré-preenche info básica
+                setUnidade(u => ({ ...u, nome: unit.name, cidade: unit.city, estado: unit.state }));
+
+                const settings = await aiAgentService.getSettings(unit.id);
+                if (settings) {
+                    setIdentidade({
+                        nome: settings.agent_name || 'Bia',
+                        genero: settings.agent_gender || 'Feminino',
+                        cargo: settings.agent_role || '',
+                        tomVoz: 'profissional e empático',
+                        personalidade: settings.agent_personality || '',
+                        usarEmojis: settings.use_emojis
+                    });
+                    setUnidade(u => ({
+                        ...u,
+                        endereco: settings.unit_address || '',
+                        bairro: settings.unit_neighborhood || '',
+                        cep: settings.unit_zip || '',
+                        referencias: settings.unit_references || '',
+                        telefone: settings.unit_phones || '',
+                        contexto: settings.regional_context || '',
+                        estacionamento: settings.parking_info || '',
+                        transporte: settings.transport_info || ''
+                    }));
+                    setHorarios({
+                        semInicio: settings.hours_weekdays?.split(' as ')[0] || '09:00',
+                        semFim: settings.hours_weekdays?.split(' as ')[1] || '18:00',
+                        sabInicio: settings.hours_saturday?.split(' as ')[0] || '09:00',
+                        sabFim: settings.hours_saturday?.split(' as ')[1] || '13:00',
+                        domingo: settings.hours_sunday !== 'Fechado',
+                        almoco: settings.hours_lunch !== 'Sem pausa para almoço'
+                    });
+                    setProduto(p => ({
+                        ...p,
+                        nome: settings.service_name || '',
+                        duracao: settings.service_duration || '',
+                        descricao: settings.service_desc || ''
+                    }));
+                    setPrecos({
+                        minimo: settings.price_min?.toString() || '0',
+                        maximo: settings.price_max?.toString() || '0',
+                        texto: settings.price_text || ''
+                    });
+                    if (settings.team_members && Array.isArray(settings.team_members) && settings.team_members.length > 0) {
+                        setEquipe(settings.team_members);
+                    }
+                }
+            }
+            setLoading(false);
+        }
+        load();
+    }, [slug]);
+
+    async function handleSave() {
+        if (!unitId) return;
+        setSaving(true);
+        const payload = {
+            agent_name: identidade.nome,
+            agent_gender: identidade.genero,
+            agent_role: identidade.cargo,
+            agent_personality: identidade.personalidade,
+            use_emojis: identidade.usarEmojis,
+
+            unit_address: unidade.endereco,
+            unit_neighborhood: unidade.bairro,
+            unit_city: unidade.cidade,
+            unit_state: unidade.estado,
+            unit_zip: unidade.cep,
+            unit_references: unidade.referencias,
+            unit_phones: unidade.telefone,
+            regional_context: unidade.contexto,
+            parking_info: unidade.estacionamento,
+            transport_info: unidade.transporte,
+
+            hours_weekdays: `${horarios.semInicio} as ${horarios.semFim}`,
+            hours_saturday: `${horarios.sabInicio} as ${horarios.sabFim}`,
+            hours_sunday: horarios.domingo ? 'Aberto' : 'Fechado',
+            hours_lunch: horarios.almoco ? 'Com pausa para almoço' : 'Sem pausa para almoço',
+
+            service_name: produto.nome,
+            service_duration: produto.duracao,
+            service_desc: produto.descricao,
+
+            price_min: Number(precos.minimo) || 0,
+            price_max: Number(precos.maximo) || 0,
+            price_text: precos.texto,
+
+            team_members: equipe
+        };
+
+        const res = await aiAgentService.upsertSettings(unitId, payload);
+        setSaving(false);
+        if (res.success) {
+            alert('Configurações salvas com sucesso!');
+        } else {
+            alert('Erro ao salvar configurações: ' + res.error);
+        }
+    }
+
     return (
         <UnitLayout slug={slug}>
-            <div className="max-w-[1000px] mx-auto pb-24">
+            <div className="max-w-[1000px] mx-auto pb-24 relative">
+                {loading && (
+                    <div className="absolute inset-0 bg-[#0A0A0A]/80 backdrop-blur-sm z-30 flex items-center justify-center rounded-3xl">
+                        <Loader2 size={32} className="text-[#F97316] animate-spin" />
+                    </div>
+                )}
 
                 {/* ── Header ── */}
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-8">
@@ -110,8 +226,13 @@ export default function AgentePage() {
                         <button className="btn-ghost flex items-center gap-2 px-4 py-2 border-white/10 text-neutral-300">
                             <Eye size={16} /> Preview
                         </button>
-                        <button className="btn-primary" style={{ background: '#a855f7', borderColor: '#a855f7' }}>
-                            <Save size={16} /> Salvar
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="btn-primary flex items-center justify-center gap-2"
+                            style={{ background: '#a855f7', borderColor: '#a855f7' }}>
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            Salvar
                         </button>
                         <button className="btn-primary flex items-center gap-2" style={{ background: '#22c55e', borderColor: '#22c55e' }}>
                             <RefreshCw size={16} /> Sincronizar n8n

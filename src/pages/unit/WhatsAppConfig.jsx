@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import UnitLayout from '../../components/UnitLayout';
 import { useParams } from 'react-router-dom';
-import { MessageCircle, Check, ChevronDown } from 'lucide-react';
+import { MessageCircle, Check, ChevronDown, Loader2 } from 'lucide-react';
+import { unitService } from '../../services/unitService';
+import { whatsappConfigService } from '../../services/whatsappConfigService';
 
 const inp = `w-full bg-[#0A0A0A] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[#F97316]/30 focus:border-[#F97316] transition-all duration-200 text-sm`;
 const labelClass = `block text-sm font-semibold mb-1.5 text-white`;
@@ -14,6 +16,11 @@ export default function WhatsAppConfig() {
     const [provider, setProvider] = useState('Z-API');
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
+    // API loading state
+    const [unitId, setUnitId] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
     // Form state
     const [config, setConfig] = useState({
         url: '',
@@ -23,7 +30,49 @@ export default function WhatsAppConfig() {
         token: ''
     });
 
+    useEffect(() => {
+        async function init() {
+            setLoading(true);
+            const unit = await unitService.getUnitBySlug(slug);
+            if (unit) {
+                setUnitId(unit.id);
+                const savedConf = await whatsappConfigService.getConfig(unit.id);
+                if (savedConf) {
+                    setProvider(savedConf.provider || 'Z-API');
+                    setConfig({
+                        url: savedConf.send_text_url || '',
+                        clientToken: savedConf.client_token || '',
+                        apiUrl: savedConf.api_url || '',
+                        instanceId: savedConf.instance_id || '',
+                        token: savedConf.instance_token || ''
+                    });
+                }
+            }
+            setLoading(false);
+        }
+        init();
+    }, [slug]);
+
     const isFormValid = config.url.length > 5 && config.clientToken.length > 5;
+
+    async function handleSave() {
+        if (!unitId || !isFormValid) return;
+        setSaving(true);
+        const res = await whatsappConfigService.upsertConfig(unitId, {
+            provider,
+            send_text_url: config.url,
+            client_token: config.clientToken,
+            api_url: config.apiUrl,
+            instance_id: config.instanceId,
+            instance_token: config.token
+        });
+        setSaving(false);
+        if (res.success) {
+            alert('Configuração WhatsApp salva com sucesso!');
+        } else {
+            alert('Erro ao salvar: ' + res.error);
+        }
+    }
 
     return (
         <UnitLayout slug={slug}>
@@ -41,7 +90,12 @@ export default function WhatsAppConfig() {
                 </div>
 
                 {/* ── Main Card ── */}
-                <div className="bg-[#111] border border-white/5 rounded-3xl p-8">
+                <div className="bg-[#111] border border-white/5 rounded-3xl p-8 relative">
+                    {loading && (
+                        <div className="absolute inset-0 bg-[#111]/80 backdrop-blur-sm z-30 flex items-center justify-center rounded-3xl border border-white/5">
+                            <Loader2 size={32} className="text-[#F97316] animate-spin" />
+                        </div>
+                    )}
 
                     {/* Provider Dropdown */}
                     <div className="mb-6 relative">
@@ -137,13 +191,21 @@ export default function WhatsAppConfig() {
                         </div>
 
                         <button
-                            className={`w-48 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${isFormValid
-                                ? 'bg-[#F97316] text-black hover:bg-[#F97316]/90 shadow-[0_0_20px_rgba(249,115,22,0.2)]'
-                                : 'bg-[#1A1A1A] text-neutral-600 cursor-not-allowed'
+                            onClick={handleSave}
+                            className={`w-48 py-3 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${isFormValid && !saving
+                                    ? 'bg-[#F97316] text-black hover:bg-[#F97316]/90 shadow-[0_0_20px_rgba(249,115,22,0.2)]'
+                                    : 'bg-[#1A1A1A] text-neutral-600 cursor-not-allowed'
                                 }`}
-                            disabled={!isFormValid}
+                            disabled={!isFormValid || saving}
                         >
-                            Salvar configuração
+                            {saving ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    Salvando...
+                                </>
+                            ) : (
+                                'Salvar configuração'
+                            )}
                         </button>
                     </div>
 
