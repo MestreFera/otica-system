@@ -208,9 +208,17 @@ export default function ClientDetails() {
                         <div className="glass-card p-6">
                             <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-5" style={{ color: 'var(--accent)' }}>Detalhes do Pedido</h3>
                             <div className="space-y-4">
-                                {[['Lente', client.lens_type], ['Material', client.lens_material], ['Armação', [client.frame_brand, client.frame_model].filter(Boolean).join(' ')],
-                                ['Total da Venda', client.total_value ? `R$ ${Number(client.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null],
-                                ['Valor Pago', client.paid_value ? `R$ ${Number(client.paid_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null]
+                                {[
+                                    ['TSO', client.tso], ['HP', client.hp],
+                                    ['Lente', client.tipo_lente || client.lens_type],
+                                    ['Adição', client.adicao],
+                                    ['Material', client.material_lente || client.lens_material],
+                                    ['Laboratório', client.laboratorio || client.lab],
+                                    ['Armação', [client.frame_brand, client.frame_model, client.info_armacao].filter(Boolean).join(' ')],
+                                    ['Total da Venda', client.total_value ? `R$ ${Number(client.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null],
+                                    ['Pgto.', client.payment_method],
+                                    ['Venc. Boleto', client.boleto_vencimento ? new Date(client.boleto_vencimento).toLocaleDateString() : null],
+                                    ['Data Exped.', client.data_expedicao ? new Date(client.data_expedicao).toLocaleDateString() : null]
                                 ].map(([l, v]) => (
                                     <div key={l} className="flex justify-between items-end pb-3 border-b border-white/[0.04] last:border-0 last:pb-0">
                                         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{l}</span>

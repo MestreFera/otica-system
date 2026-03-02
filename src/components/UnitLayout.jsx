@@ -41,9 +41,8 @@ export default function UnitLayout({ children, slug }) {
         { to: `/${slug}/whatsapp`, label: 'WhatsApp Oficial', icon: MessageSquare },
         { to: `/${slug}/pipeline`, label: 'Conversas', icon: MessageCircle },
         { to: `/${slug}/agendamentos`, label: 'Agendamentos', icon: Calendar, badge: todayCount || null },
-        { to: `/${slug}/clientes`, label: 'Follow-ups', icon: Link2 },
-        { to: `/${slug}/pausas`, label: 'Pausas', icon: PauseCircle },
-        { to: `/${slug}/disparos`, label: 'Disparos', icon: Megaphone },
+        { to: `/${slug}/clientes`, label: 'Clientes (Receita)', icon: Users },
+        { to: `/${slug}/follow-ups`, label: 'Central de Mensagens', icon: MessageSquare },
         { to: `/${slug}/financeiro`, label: 'Financeiro', icon: DollarSign },
         { to: `/${slug}/crm`, label: 'Relatórios', icon: BarChart2 },
     ];

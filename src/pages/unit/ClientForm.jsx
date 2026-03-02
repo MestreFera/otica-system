@@ -8,8 +8,11 @@ import { ArrowLeft, Save, User, Eye, Wallet, Package, FileText, Phone } from 'lu
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const LENS_MATERIALS = ['Resina', 'Policarbonato', 'Alto Índice', 'Outro'];
-const LENS_TONES = ['Mult Incolor', 'Mult Foto Blue', 'Mult Blue', 'V.S Foto/AR', 'V.S Blue', 'V.S Blue Foto', 'Digital HD', 'Multi/V.S Poli', 'Outro'];
-const LENS_TYPES = ['Monofocal', 'Bifocal', 'Multifocal/Progressiva', 'Anti-reflexo', 'Transitions/Fotocromática'];
+const LENS_TYPES = [
+    'Mult Incolor', 'Mult Foto Blue', 'Mult Blue', 'V.S Foto/AR', 'V.S Blue', 'V.S Blue Foto',
+    'Digital HD', 'Multi/V.S Poli', 'Monofocal', 'Bifocal', 'Multifocal/Progressiva',
+    'Anti-reflexo', 'Transitions/Fotocromática', 'Outro'
+];
 const PAYMENT_METHODS = ['Dinheiro', 'PIX', 'Cartão de Débito', 'Cartão de Crédito', 'Boleto', 'Crediário Próprio'];
 const GENDERS = ['Masculino', 'Feminino', 'Outro', 'Não informado'];
 const STATUS_OPTIONS = ['Novo', 'Pedir Lente', 'Em Produção', 'Pronto', 'Entregue', 'Cancelado'];
@@ -249,11 +252,10 @@ export default function ClientForm() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <TF label="Adição" value={form.adicao} onChange={upd('adicao')} placeholder="Ex: 300" />
                             <SF label="Tipo de Lente" value={form.tipo_lente} onChange={upd('tipo_lente')} options={LENS_TYPES} />
                             <SF label="Material" value={form.material_lente} onChange={upd('material_lente')} options={LENS_MATERIALS} />
-                            <SF label="Tons/Tratamento" value={form.tom_lente} onChange={upd('tom_lente')} options={LENS_TONES} />
                         </div>
                     </Section>
 
@@ -291,12 +293,22 @@ export default function ClientForm() {
                                     className="w-full bg-[#0A0A0A] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 resize-none" />
                             </div>
                             <div>
-                                <label className={lbl}>Observações</label>
+                                <label className={lbl}>Observações Gerais</label>
                                 <textarea value={form.notes} onChange={upd('notes')} rows={3} placeholder="Observações adicionais..."
                                     className="w-full bg-[#0A0A0A] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 resize-none" />
                             </div>
                         </div>
                     </Section>
+
+                    <div className="flex gap-4 pt-4 border-t border-white/10 mt-8 mb-8">
+                        <button type="button" onClick={() => navigate(-1)} className="flex-1 py-4 rounded-xl border border-white/10 text-white/70 hover:bg-white/5 hover:text-white transition-colors text-sm font-bold">
+                            Cancelar
+                        </button>
+                        <button type="submit" disabled={saving} className="flex-1 py-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition-colors font-bold flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-500/20">
+                            {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+                            {isEdit ? 'Atualizar Ficha do Cliente' : 'Salvar Novo Cliente'}
+                        </button>
+                    </div>
 
                 </form>
             </div>
