@@ -5,7 +5,8 @@ import { appointmentService } from '../services/appointmentService';
 import {
     LayoutDashboard, Users, LogOut, Menu, X, Bell, ChevronRight,
     Scan, DollarSign, Calendar, Search, Settings, Package,
-    FileText, BarChart2, ShoppingBag, KanbanSquare
+    FileText, BarChart2, ShoppingBag, KanbanSquare,
+    Bot, MessageSquare, MessageCircle, Link2, PauseCircle, Megaphone
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
