@@ -180,14 +180,14 @@ export default function ClientDetails() {
 
                             {/* Prescription */}
                             <div>
-                                <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}><Eye size={12} /> Prescrição Óptica</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {[{ label: 'OD — Olho Direito', data: [['ESF', client.od_esf], ['CIL', client.od_cil], ['EIXO', client.od_eixo], ['DNP', client.od_dnp], ['ADD', client.od_add]] },
-                                    { label: 'OE — Olho Esquerdo', data: [['ESF', client.oe_esf], ['CIL', client.oe_cil], ['EIXO', client.oe_eixo], ['DNP', client.oe_dnp], ['ADD', client.oe_add]] }
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}><Eye size={12} /> Prescrição Principal</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                    {[{ label: 'OD — Olho Direito', data: [['ESF', client.od_esf], ['CIL', client.od_cil], ['EIXO', client.od_eixo]] },
+                                    { label: 'OE — Olho Esquerdo', data: [['ESF', client.oe_esf], ['CIL', client.oe_cil], ['EIXO', client.oe_eixo]] }
                                     ].map(eye => (
                                         <div key={eye.label} className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
                                             <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--accent)' }}>{eye.label}</p>
-                                            <div className="grid grid-cols-5 gap-2">
+                                            <div className="grid grid-cols-3 gap-2">
                                                 {eye.data.map(([l, v]) => (
                                                     <div key={l} className="text-center">
                                                         <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{l}</p>
@@ -197,6 +197,31 @@ export default function ClientDetails() {
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}><Eye size={12} /> Prescrição Biblioteca</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {(() => {
+                                        let bibOd = {}; let bibOe = {};
+                                        try { bibOd = JSON.parse(client.prescricao_od || '{}'); } catch (e) { }
+                                        try { bibOe = JSON.parse(client.prescricao_oe || '{}'); } catch (e) { }
+                                        return [
+                                            { label: 'OD — Olho Direito', data: [['ESF', bibOd.bib_esf], ['CIL', bibOd.bib_cil], ['EIXO', bibOd.bib_eixo]] },
+                                            { label: 'OE — Olho Esquerdo', data: [['ESF', bibOe.bib_esf], ['CIL', bibOe.bib_cil], ['EIXO', bibOe.bib_eixo]] }
+                                        ].map(eye => (
+                                            <div key={eye.label} className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--accent)' }}>{eye.label}</p>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {eye.data.map(([l, v]) => (
+                                                        <div key={l} className="text-center">
+                                                            <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{l}</p>
+                                                            <p className="text-sm font-bold text-white">{v || '—'}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))
+                                    })()}
                                 </div>
                             </div>
                         </div>

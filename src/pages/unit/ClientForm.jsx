@@ -20,9 +20,12 @@ const STATUS_OPTIONS = ['Novo', 'Pedir Lente', 'Em Produção', 'Pronto', 'Entre
 const EMPTY_FORM = {
     // 1. Identificação
     tso: '', status: 'Novo', name: '', hp: '', laboratorio: '', medico: '',
-    // 2. Prescrição
+    // 2. Prescrição Principal
     od_esf: '', od_cil: '', od_eixo: '',
     oe_esf: '', oe_cil: '', oe_eixo: '',
+    // Prescrição Biblioteca
+    bib_od_esf: '', bib_od_cil: '', bib_od_eixo: '',
+    bib_oe_esf: '', bib_oe_cil: '', bib_oe_eixo: '',
     adicao: '', tipo_lente: '', material_lente: '', tom_lente: '',
     // 3. Dados Pessoais
     cpf: '', phone: '', email: '', birth_date: '', boleto_vencimento: '', city: '', address: '',
@@ -99,6 +102,11 @@ export default function ClientForm() {
         setLoading(true);
         clientService.getClientById(id).then(data => {
             if (data) {
+                let bibOd = {};
+                let bibOe = {};
+                try { bibOd = JSON.parse(data.prescricao_od || '{}'); } catch (e) { }
+                try { bibOe = JSON.parse(data.prescricao_oe || '{}'); } catch (e) { }
+
                 setForm({
                     ...EMPTY_FORM, // Garante que campos novos não quebrem
                     tso: data.tso || '',
@@ -110,6 +118,10 @@ export default function ClientForm() {
 
                     od_esf: data.od_esf ?? '', od_cil: data.od_cil ?? '', od_eixo: data.od_eixo ?? '',
                     oe_esf: data.oe_esf ?? '', oe_cil: data.oe_cil ?? '', oe_eixo: data.oe_eixo ?? '',
+
+                    bib_od_esf: bibOd.bib_esf || '', bib_od_cil: bibOd.bib_cil || '', bib_od_eixo: bibOd.bib_eixo || '',
+                    bib_oe_esf: bibOe.bib_esf || '', bib_oe_cil: bibOe.bib_cil || '', bib_oe_eixo: bibOe.bib_eixo || '',
+
                     adicao: data.adicao || '', tipo_lente: data.tipo_lente || '', material_lente: data.material_lente || '', tom_lente: data.tom_lente || '',
 
                     cpf: data.cpf || '', phone: data.phone || '', email: data.email || '', birth_date: data.birth_date || '', boleto_vencimento: data.boleto_vencimento || '', city: data.city || '', address: data.address || '',
@@ -221,43 +233,93 @@ export default function ClientForm() {
                     </Section>
 
                     {/* ── 2. Prescrição Oftálmica ── */}
-                    <Section title="Prescrição Oftálmica">
-                        <div className="mb-6">
-                            <h4 className="text-sm font-bold text-white mb-4">Prescrição Principal</h4>
-                            <div className="rounded-xl border border-white/10 overflow-hidden bg-[#0A0A0A]">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="text-xs text-neutral-400 bg-white/5 uppercase">
-                                        <tr>
-                                            <th className="px-4 py-3 font-medium">Olho</th>
-                                            <th className="px-4 py-3 font-medium">ESF</th>
-                                            <th className="px-4 py-3 font-medium border-l border-white/5">CIL</th>
-                                            <th className="px-4 py-3 font-medium border-l border-white/5">EIXO</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        <tr>
-                                            <td className="px-4 py-3 font-bold text-white">OD</td>
-                                            <td className="px-0 py-0"><input type="text" className="w-full bg-transparent px-4 py-3 outline-none text-white focus:bg-white/5" placeholder="ESF" value={form.od_esf} onChange={upd('od_esf')} /></td>
-                                            <td className="px-0 py-0 border-l border-white/5"><input type="text" className="w-full bg-transparent px-4 py-3 outline-none text-white focus:bg-white/5" placeholder="CIL" value={form.od_cil} onChange={upd('od_cil')} /></td>
-                                            <td className="px-0 py-0 border-l border-white/5"><input type="text" className="w-full bg-transparent px-4 py-3 outline-none text-white focus:bg-white/5" placeholder="EIXO" value={form.od_eixo} onChange={upd('od_eixo')} /></td>
-                                        </tr>
-                                        <tr>
-                                            <td className="px-4 py-3 font-bold text-white">OE</td>
-                                            <td className="px-0 py-0"><input type="text" className="w-full bg-transparent px-4 py-3 outline-none text-white focus:bg-white/5" placeholder="ESF" value={form.oe_esf} onChange={upd('oe_esf')} /></td>
-                                            <td className="px-0 py-0 border-l border-white/5"><input type="text" className="w-full bg-transparent px-4 py-3 outline-none text-white focus:bg-white/5" placeholder="CIL" value={form.oe_cil} onChange={upd('oe_cil')} /></td>
-                                            <td className="px-0 py-0 border-l border-white/5"><input type="text" className="w-full bg-transparent px-4 py-3 outline-none text-white focus:bg-white/5" placeholder="EIXO" value={form.oe_eixo} onChange={upd('oe_eixo')} /></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div className="bg-[#FFFFFF] text-black rounded-lg border border-gray-200 overflow-hidden mb-8 shadow-sm">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h3 className="text-lg font-bold text-gray-800">Prescrição Oftálmica</h3>
+                            <div className="h-0.5 w-full bg-[#2563EB] mt-3"></div>
                         </div>
+                        <div className="p-6 space-y-8">
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <TF label="Adição" value={form.adicao} onChange={upd('adicao')} placeholder="Ex: 300" />
-                            <SF label="Tipo de Lente" value={form.tipo_lente} onChange={upd('tipo_lente')} options={LENS_TYPES} />
-                            <SF label="Material" value={form.material_lente} onChange={upd('material_lente')} options={LENS_MATERIALS} />
+                            {/* Principal Table */}
+                            <div>
+                                <h4 className="text-[13px] font-bold text-gray-700 mb-3 uppercase tracking-wide">Prescrição Principal</h4>
+                                <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-[#F8FAFC] text-gray-500 text-xs uppercase border-b border-gray-200">
+                                            <tr>
+                                                <th className="px-5 py-3 font-semibold border-r border-gray-200">Olho</th>
+                                                <th className="px-5 py-3 font-semibold border-r border-gray-200">ESF</th>
+                                                <th className="px-5 py-3 font-semibold border-r border-gray-200">CIL</th>
+                                                <th className="px-5 py-3 font-semibold">EIXO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            <tr>
+                                                <td className="px-5 py-3 font-bold text-gray-800 border-r border-gray-200 w-24">OD</td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="ESF" value={form.od_esf} onChange={upd('od_esf')} /></td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="CIL" value={form.od_cil} onChange={upd('od_cil')} /></td>
+                                                <td className="p-0"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="EIXO" value={form.od_eixo} onChange={upd('od_eixo')} /></td>
+                                            </tr>
+                                            <tr>
+                                                <td className="px-5 py-3 font-bold text-gray-800 border-r border-gray-200 w-24">OE</td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="ESF" value={form.oe_esf} onChange={upd('oe_esf')} /></td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="CIL" value={form.oe_cil} onChange={upd('oe_cil')} /></td>
+                                                <td className="p-0"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="EIXO" value={form.oe_eixo} onChange={upd('oe_eixo')} /></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Biblioteca Table */}
+                            <div>
+                                <h4 className="text-[13px] font-bold text-gray-700 mb-3 uppercase tracking-wide">Prescrição Biblioteca</h4>
+                                <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-[#F8FAFC] text-gray-500 text-xs uppercase border-b border-gray-200">
+                                            <tr>
+                                                <th className="px-5 py-3 font-semibold border-r border-gray-200">Olho</th>
+                                                <th className="px-5 py-3 font-semibold border-r border-gray-200">ESF</th>
+                                                <th className="px-5 py-3 font-semibold border-r border-gray-200">CIL</th>
+                                                <th className="px-5 py-3 font-semibold">EIXO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            <tr>
+                                                <td className="px-5 py-3 font-bold text-gray-800 border-r border-gray-200 w-24">OD</td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="ESF" value={form.bib_od_esf} onChange={upd('bib_od_esf')} /></td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="CIL" value={form.bib_od_cil} onChange={upd('bib_od_cil')} /></td>
+                                                <td className="p-0"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="EIXO" value={form.bib_od_eixo} onChange={upd('bib_od_eixo')} /></td>
+                                            </tr>
+                                            <tr>
+                                                <td className="px-5 py-3 font-bold text-gray-800 border-r border-gray-200 w-24">OE</td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="ESF" value={form.bib_oe_esf} onChange={upd('bib_oe_esf')} /></td>
+                                                <td className="p-0 border-r border-gray-200"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="CIL" value={form.bib_oe_cil} onChange={upd('bib_oe_cil')} /></td>
+                                                <td className="p-0"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-gray-800 placeholder-gray-300 focus:bg-blue-50/50" placeholder="EIXO" value={form.bib_oe_eixo} onChange={upd('bib_oe_eixo')} /></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Selects at bottom of Prescription block */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-800 mb-2 tracking-wide">Adição</label>
+                                    <input type="text" value={form.adicao} onChange={upd('adicao')} placeholder="Ex: 300"
+                                        className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-gray-800 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-800 mb-2 tracking-wide">Tipo de Lente</label>
+                                    <select value={form.tipo_lente} onChange={upd('tipo_lente')} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-gray-800 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]">
+                                        <option value="">Selecione o tipo</option>
+                                        {LENS_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
                         </div>
-                    </Section>
+                    </div>
 
                     {/* ── 3. Dados Pessoais ── */}
                     <Section title="Dados Pessoais">

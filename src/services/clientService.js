@@ -52,8 +52,16 @@ function buildPayload(formData, unitId) {
         hp: formData.hp || null,
         laboratorio: formData.laboratorio || null,
         medico: formData.medico || null,
-        prescricao_od: formData.prescricao_od || null,
-        prescricao_oe: formData.prescricao_oe || null,
+        prescricao_od: JSON.stringify({
+            bib_esf: formData.bib_od_esf || '',
+            bib_cil: formData.bib_od_cil || '',
+            bib_eixo: formData.bib_od_eixo || ''
+        }),
+        prescricao_oe: JSON.stringify({
+            bib_esf: formData.bib_oe_esf || '',
+            bib_cil: formData.bib_oe_cil || '',
+            bib_eixo: formData.bib_oe_eixo || ''
+        }),
         adicao: formData.adicao || null,
         tipo_lente: formData.tipo_lente || null,
         material_lente: formData.material_lente || null,
