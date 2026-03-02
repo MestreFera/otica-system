@@ -3,9 +3,20 @@ import { Link, useParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { clientService } from '../../services/clientService';
 import UnitLayout from '../../components/UnitLayout';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, ChevronRight, Package, Clock, CheckCircle, Truck, AlertTriangle } from 'lucide-react';
 
 const STATUS_FILTERS = ['Todos', 'Novo', 'Em Produção', 'Pronto', 'Entregue'];
+
+const STATUS_STYLING = {
+    'Todos': { bg: 'rgba(255,255,255,0.05)', text: 'var(--text-secondary)', border: 'transparent' },
+    'Novo': { bg: 'rgba(59, 130, 246, 0.12)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.2)' },
+    'Em Produção': { bg: 'rgba(245, 158, 11, 0.1)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.2)' },
+    'Pronto': { bg: 'rgba(139, 92, 246, 0.12)', text: '#a78bfa', border: 'rgba(139, 92, 246, 0.2)' },
+    'Entregue': { bg: 'rgba(34, 197, 94, 0.1)', text: '#4ade80', border: 'rgba(34, 197, 94, 0.2)' },
+    'Cancelado': { bg: 'rgba(239, 68, 68, 0.1)', text: '#f87171', border: 'rgba(239, 68, 68, 0.2)' },
+};
+
+const STATUS_ICONS = { 'Novo': Package, 'Em Produção': Clock, 'Pronto': CheckCircle, 'Entregue': Truck, 'Cancelado': AlertTriangle };
 
 export default function ClientsPanel() {
     const { slug } = useParams();
@@ -36,84 +47,120 @@ export default function ClientsPanel() {
 
     return (
         <UnitLayout slug={slug}>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-white">Clientes</h1>
-                    <p className="text-white/30 text-sm mt-1">{filtered.length} resultado(s)</p>
+            <div className="max-w-[1440px] mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                        <h1 className="text-2xl font-bold text-white">Pacientes & Clientes</h1>
+                        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{filtered.length} registro(s) encontrado(s)</p>
+                    </div>
+                    <Link to={`/${slug}/clientes/novo`} className="btn-primary flex items-center gap-2 text-sm px-5 py-2.5">
+                        <Plus size={16} /> Novo Atendimento
+                    </Link>
                 </div>
-                <Link to={`/${slug}/clientes/novo`} className="flex items-center gap-2 btn-primary text-sm px-4 py-2.5">
-                    <Plus size={16} /> Novo Atendimento
-                </Link>
-            </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                <div className="relative flex-1">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
-                    <input
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        placeholder="Buscar por nome ou telefone..."
-                        className="input-futuristic w-full pl-10"
-                    />
+                {/* Filters */}
+                <div className="flex flex-col lg:flex-row gap-4 mb-8">
+                    <div className="relative flex-1 max-w-md">
+                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Buscar por nome ou telefone..."
+                            className="input-futuristic w-full pl-10"
+                        />
+                    </div>
+                    <div className="flex gap-2 flex-wrap items-center bg-white/[0.02] p-1.5 rounded-xl border border-white/[0.05]">
+                        {STATUS_FILTERS.map(s => {
+                            const isAct = statusFilter === s;
+                            const st = STATUS_STYLING[s] || STATUS_STYLING['Todos'];
+                            const Icon = STATUS_ICONS[s];
+                            return (
+                                <button
+                                    key={s}
+                                    onClick={() => setStatusFilter(s)}
+                                    className={`px-3.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${isAct ? 'shadow-lg' : 'hover:bg-white/5 opacity-70 hover:opacity-100'}`}
+                                    style={isAct ? { background: st.bg, color: st.text, border: `1px solid ${st.border}` } : { color: 'var(--text-secondary)' }}
+                                >
+                                    {Icon && <Icon size={12} />} {s}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
-                <div className="flex gap-1.5 flex-wrap">
-                    {STATUS_FILTERS.map(s => (
-                        <button
-                            key={s}
-                            onClick={() => setStatusFilter(s)}
-                            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${statusFilter === s
-                                ? 'bg-cyan-400/15 text-cyan-400 border border-cyan-400/25'
-                                : 'text-white/30 hover:text-white/60 hover:bg-white/5 border border-transparent'
-                                }`}
-                        >
-                            {s}
-                        </button>
-                    ))}
-                </div>
-            </div>
 
-            {/* Clients list */}
-            {loading ? (
-                <div className="flex items-center justify-center h-48">
-                    <div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" />
-                </div>
-            ) : filtered.length === 0 ? (
-                <div className="text-center py-16 text-white/20">
-                    <div className="text-5xl mb-4">🔍</div>
-                    <p className="text-lg font-medium">Nenhum cliente encontrado</p>
-                    <p className="text-sm mt-1">Ajuste os filtros ou cadestre um novo atendimento</p>
-                </div>
-            ) : (
-                <div className="grid gap-3">
-                    {filtered.map(c => (
-                        <Link key={c.id} to={`/${slug}/clientes/${c.id}`} className="glass-card p-4 group block hover:border-cyan-400/15">
-                            <div className="flex items-center gap-4">
-                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400/15 to-purple-500/15 border border-white/[0.06] flex items-center justify-center text-white font-bold flex-shrink-0">
-                                    {(c.name || c.client_name)?.[0]?.toUpperCase() || '?'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="text-sm font-semibold text-white/80 group-hover:text-white">{c.name || c.client_name}</p>
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${c.status === 'Entregue' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' :
-                                            c.status === 'Pronto' ? 'bg-purple-500/15 text-purple-400 border-purple-500/25' :
-                                                c.status === 'Em Produção' ? 'bg-amber-500/12 text-amber-400 border-amber-500/20' :
-                                                    c.status === 'Novo' ? 'bg-red-500/15 text-red-400 border-red-500/25' :
-                                                        'bg-white/5 text-white/30 border-white/10'
-                                            }`}>{c.status}</span>
-                                    </div>
-                                    <div className="flex items-center gap-4 mt-1">
-                                        <p className="text-xs text-white/25">{c.phone || 'Sem telefone'}</p>
-                                        <p className="text-xs text-white/25">{c.lens_type || 'Sem lente'}</p>
-                                        {c.total_value && <p className="text-xs text-emerald-400/70 font-medium">R$ {Number(c.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
-                                    </div>
-                                </div>
-                                <span className="text-white/15 group-hover:text-cyan-400/50 transition-colors text-sm">→</span>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            )}
+                {/* Clients list */}
+                {loading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '2px solid var(--border)', borderTopColor: 'var(--accent)' }} />
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="text-center py-24 glass-card">
+                        <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+                            <Search size={24} />
+                        </div>
+                        <p className="text-lg font-bold text-white mb-1">Nenhum cliente encontrado</p>
+                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Ajuste os filtros ou cadastre um novo atendimento</p>
+                    </div>
+                ) : (
+                    <div className="glass-card overflow-hidden">
+                        <table className="table-premium">
+                            <thead>
+                                <tr>
+                                    <th>Cliente / Contato</th>
+                                    <th>Status do Pedido</th>
+                                    <th>Produto / Lente</th>
+                                    <th>Valor Total</th>
+                                    <th>Data Cadastro</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map(c => {
+                                    const st = STATUS_STYLING[c.status] || STATUS_STYLING['Novo'];
+                                    const Icon = STATUS_ICONS[c.status] || Package;
+                                    return (
+                                        <tr key={c.id} className="group cursor-pointer" onClick={() => window.location.href = `/${slug}/clientes/${c.id}`}>
+                                            <td>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                                                        style={{ background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' }}>
+                                                        {(c.name || c.client_name)?.[0]?.toUpperCase() || '?'}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-white group-hover:text-[var(--accent)] transition-colors">{c.name || c.client_name}</p>
+                                                        <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{c.phone || 'Sem telefone'}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md font-bold"
+                                                    style={{ background: st.bg, color: st.text, border: `1px solid ${st.border}` }}>
+                                                    <Icon size={12} /> {c.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="text-xs">
+                                                    <p className="font-medium text-white/80">{c.lens_type || '—'}</p>
+                                                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.frame_brand ? `Armação: ${c.frame_brand}` : '—'}</p>
+                                                </div>
+                                            </td>
+                                            <td className="font-semibold" style={{ color: 'var(--accent)' }}>
+                                                {c.total_value ? `R$ ${Number(c.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
+                                            </td>
+                                            <td className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                                {new Date(c.created_at).toLocaleDateString('pt-BR')}
+                                            </td>
+                                            <td className="text-right">
+                                                <ChevronRight size={16} className="inline-block opacity-0 group-hover:opacity-100 transition-all transform -translate-x-2 group-hover:translate-x-0" style={{ color: 'var(--accent)' }} />
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </UnitLayout>
     );
 }

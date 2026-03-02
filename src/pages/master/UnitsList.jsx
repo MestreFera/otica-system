@@ -3,12 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { unitService } from '../../services/unitService';
 import { formatCurrency } from '../../utils/helpers';
-import { Plus, LogOut, Power, Eye, Send, Scan, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
+import { Plus, LogOut, Power, Eye, Send, Scan, Pencil, Trash2, X, AlertTriangle, TrendingUp, Building2, Zap } from 'lucide-react';
 
 // ─── Reusable input style ─────────────────────────────────────────────────────
-const inp = `w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white
- placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-400/30
- focus:border-cyan-400 transition-all duration-200 text-sm`;
+const inp = `w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all duration-200 text-sm`;
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 function EditModal({ unit, onClose, onSaved }) {
@@ -38,24 +36,18 @@ function EditModal({ unit, onClose, onSaved }) {
 
     const f = (key, label, type = 'text', placeholder = '') => (
         <div>
-            <label className="block text-xs text-cyan-300/60 mb-1.5 font-medium uppercase tracking-wider">{label}</label>
-            <input
-                type={type}
-                value={form[key]}
-                onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                placeholder={placeholder}
-                className={inp}
-            />
+            <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
+            <input type={type} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className={inp} />
         </div>
     );
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-            <div className="relative bg-[#0d1225] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl shadow-black/60 animate-fadeIn">
+            <div className="relative border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn" style={{ background: '#0B0B0F' }}>
                 <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-lg font-bold text-white">Editar Unidade</h3>
-                    <button onClick={onClose} className="text-white/30 hover:text-white transition-colors"><X size={18} /></button>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-wide">Editar Unidade</h3>
+                    <button onClick={onClose} className="text-white/30 hover:text-[var(--accent)] transition-colors"><X size={18} /></button>
                 </div>
 
                 <div className="space-y-4">
@@ -64,26 +56,20 @@ function EditModal({ unit, onClose, onSaved }) {
                     {f('email', 'E-mail', 'email', 'contato@otica.com')}
                     {f('whatsapp', 'WhatsApp', 'text', '(11) 99999-9999')}
                     <div>
-                        <label className="block text-xs text-cyan-300/60 mb-1.5 font-medium uppercase tracking-wider">Status</label>
-                        <select
-                            value={form.active}
-                            onChange={e => setForm(f => ({ ...f, active: e.target.value === 'true' }))}
-                            className={inp}
-                        >
+                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-muted)' }}>Status</label>
+                        <select value={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.value === 'true' }))} className={inp}>
                             <option value="true">Ativa</option>
                             <option value="false">Inativa</option>
                         </select>
                     </div>
                 </div>
 
-                {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
+                {error && <p className="text-red-400 text-xs mt-3 bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}
 
                 <div className="flex gap-3 mt-6">
-                    <button onClick={onClose} className="flex-1 py-2.5 text-sm text-white/50 border border-white/10 hover:border-white/30 hover:text-white rounded-xl transition-all">
-                        Cancelar
-                    </button>
-                    <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-60">
-                        {saving ? 'Salvando...' : 'Salvar Alterações'}
+                    <button onClick={onClose} className="btn-ghost flex-1">Cancelar</button>
+                    <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-60">
+                        {saving ? 'Salvando...' : 'Salvar'}
                     </button>
                 </div>
             </div>
@@ -108,33 +94,26 @@ function DeleteModal({ unit, onClose, onDeleted }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-            <div className="relative bg-[#0d1225] border border-red-500/20 rounded-2xl p-6 w-full max-w-sm shadow-2xl shadow-black/60 animate-fadeIn">
+            <div className="relative border border-red-500/20 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fadeIn" style={{ background: '#0B0B0F' }}>
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center flex-shrink-0">
                         <AlertTriangle size={20} className="text-red-400" />
                     </div>
                     <div>
-                        <h3 className="text-base font-bold text-white">Excluir Unidade</h3>
-                        <p className="text-xs text-white/40 mt-0.5">Esta ação não pode ser desfeita</p>
+                        <h3 className="text-base font-bold text-white uppercase tracking-wider">Excluir Unidade</h3>
+                        <p className="text-xs text-white/40 mt-0.5">Ação irreversível</p>
                     </div>
                 </div>
-
-                <p className="text-sm text-white/60 mb-1">
-                    Você está prestes a excluir permanentemente:
-                </p>
-                <p className="text-white font-semibold mb-4">"{unit.name}"</p>
-                <p className="text-xs text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 mb-5">
+                <p className="text-sm text-white/60 mb-1">Você está prestes a excluir permanentemente:</p>
+                <p className="text-white font-semibold mb-4 text-lg">"{unit.name}"</p>
+                <p className="text-xs text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5 font-medium leading-relaxed">
                     ⚠️ Todos os clientes, agendamentos e dados associados serão excluídos em cascata.
                 </p>
-
-                {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-
+                {error && <p className="text-red-400 text-xs mb-3 bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-2.5 text-sm text-white/50 border border-white/10 hover:border-white/30 hover:text-white rounded-xl transition-all">
-                        Cancelar
-                    </button>
-                    <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2.5 text-sm font-bold bg-red-500 hover:bg-red-400 text-white rounded-xl transition-all disabled:opacity-60">
-                        {deleting ? 'Excluindo...' : 'Sim, Excluir'}
+                    <button onClick={onClose} className="btn-ghost flex-1 border-white/10">Cancelar</button>
+                    <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider bg-red-500 hover:bg-red-400 text-white rounded-xl transition-all disabled:opacity-60">
+                        {deleting ? 'Excluindo...' : 'Definitivo'}
                     </button>
                 </div>
             </div>
@@ -149,8 +128,8 @@ export default function UnitsList() {
     const [notification, setNotification] = useState({ open: false, target: 'all', message: '' });
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [editTarget, setEditTarget] = useState(null); // unit being edited
-    const [deleteTarget, setDeleteTarget] = useState(null); // unit being deleted
+    const [editTarget, setEditTarget] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => { loadData(); }, []);
 
@@ -162,7 +141,7 @@ export default function UnitsList() {
     }
 
     async function handleToggle(unit) {
-        const { success } = await unitService.toggleUnitActive(unit.id, unit.active);
+        const { success } = await unitService.toggleUnitActive(unit.id, !unit.active);
         if (success) setUnits(units.map(u => u.id === unit.id ? { ...u, active: !u.active } : u));
     }
 
@@ -174,93 +153,109 @@ export default function UnitsList() {
 
     return (
         <div className="min-h-screen gradient-master dark-scroll">
-            <header className="border-b border-white/[0.04] px-6 py-4 flex items-center gap-4 bg-[#0d1225]/60 backdrop-blur-xl sticky top-0 z-20">
+            <header className="sticky top-0 z-20 px-5 lg:px-8 py-3.5 flex items-center gap-4 backdrop-blur-xl" style={{ background: 'rgba(11, 11, 15, 0.85)', borderBottom: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-3">
-                    <div className="logo-icon"><Scan size={20} className="text-white" /></div>
+                    <div className="logo-icon"><Scan size={18} className="text-[#0B0B0F]" /></div>
                     <div>
-                        <p className="text-[10px] text-cyan-400/60 font-semibold uppercase tracking-widest">ÓticaSystem</p>
-                        <p className="text-sm font-bold text-white">Master Admin</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: 'var(--accent)' }}>ÓticaSystem</p>
+                        <p className="text-sm font-bold text-white">Painel Master</p>
                     </div>
                 </div>
-                <nav className="flex items-center gap-1 ml-8">
-                    <Link to="/master/dashboard" className="px-4 py-2 text-sm text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all">Dashboard</Link>
-                    <Link to="/master/unidades" className="px-4 py-2 text-sm text-cyan-400 bg-cyan-400/10 rounded-lg font-medium border border-cyan-400/20">Unidades</Link>
+
+                <nav className="flex items-center gap-1 ml-6">
+                    <Link to="/master/dashboard" className="nav-item text-xs px-3.5 py-2">
+                        <TrendingUp size={14} /> Dashboard
+                    </Link>
+                    <Link to="/master/unidades" className="nav-item active text-xs px-3.5 py-2">
+                        <Building2 size={14} /> Unidades
+                    </Link>
+                    <Link to="/master/automations" className="nav-item text-xs px-3.5 py-2">
+                        <Zap size={14} /> Automações
+                    </Link>
                 </nav>
+
                 <div className="flex-1" />
-                <button onClick={async () => { await logout(); navigate('/master/login'); }} className="flex items-center gap-2 px-3 py-2 text-sm text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
-                    <LogOut size={16} /> <span className="hidden sm:inline">Sair</span>
+
+                <button onClick={async () => { await logout(); navigate('/master/login'); }}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg transition-all"
+                    style={{ color: 'rgba(239, 68, 68, 0.6)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#f87171'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(239,68,68,0.6)'; }}>
+                    <LogOut size={15} /> Sair
                 </button>
             </header>
 
-            <div className="p-6 max-w-6xl mx-auto">
-                <div className="flex items-center justify-between mb-6">
+            <div className="p-5 lg:p-8 max-w-[1440px] mx-auto animate-fadeIn">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">Gerenciar <span className="text-cyan-400">Unidades</span></h1>
-                        <p className="text-white/30 text-sm mt-1">{units.length} unidade(s) cadastrada(s)</p>
+                        <h1 className="text-2xl font-bold text-white tracking-tight">Gerenciar <span style={{ color: 'var(--accent)' }}>Unidades</span></h1>
+                        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{units.length} unidade(s) cadastrada(s)</p>
                     </div>
-                    <Link to="/master/unidades/nova" className="flex items-center gap-2 btn-primary text-sm px-4 py-2.5">
+                    <Link to="/master/unidades/nova" className="btn-primary flex items-center gap-2 text-xs px-5 py-2.5">
                         <Plus size={16} /> Nova Unidade
                     </Link>
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-12 text-white/30">
-                        <div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin mx-auto mb-3" />
-                        Carregando unidades...
+                    <div className="flex items-center justify-center p-24">
+                        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '2px solid var(--border)', borderTopColor: 'var(--accent)' }} />
                     </div>
                 ) : (
-                    <div className="grid gap-4">
+                    <div className="grid gap-4 stagger-children">
                         {units.map(unit => (
-                            <div key={unit.id || unit.slug} className="glass-card p-6">
-                                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/[0.06] flex items-center justify-center text-2xl flex-shrink-0">🏪</div>
+                            <div key={unit.id || unit.slug} className="glass-card p-6 overflow-hidden relative group">
+                                <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] opacity-0 group-hover:opacity-10 transition-opacity duration-700 pointer-events-none" style={{ background: 'var(--accent-glow)' }} />
+                                <div className="flex flex-col lg:flex-row lg:items-center gap-5 relative z-10">
+                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 font-bold" style={unit.active ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' } : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.2)' }}>
+                                        {unit.name?.[0]?.toUpperCase() || 'U'}
+                                    </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                                            <h3 className="text-white font-semibold text-lg">{unit.name}</h3>
-                                            <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border ${unit.active ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : 'bg-white/5 text-white/30 border-white/10'}`}>
+                                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                            <h3 className="text-white font-bold text-lg">{unit.name}</h3>
+                                            <span className={`text-[9px] px-2.5 py-1 rounded-md font-bold uppercase tracking-widest border`} style={unit.active ? { background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', borderColor: 'rgba(52, 211, 153, 0.2)' } : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}>
                                                 {unit.active ? '● Ativa' : '● Inativa'}
                                             </span>
                                         </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
                                             {[
-                                                { label: 'Cidade', val: unit.city },
+                                                { label: 'Cidade', val: unit.city || '—' },
                                                 { label: 'Slug', val: unit.slug },
                                                 { label: 'Clientes', val: unit.total_clients || '0' },
                                                 { label: 'Faturamento', val: formatCurrency(unit.total_revenue || 0) },
                                             ].map(({ label, val }) => (
-                                                <div key={label} className="bg-white/[0.03] border border-white/[0.04] rounded-xl p-3">
-                                                    <p className="text-[10px] text-white/25 uppercase tracking-wider">{label}</p>
-                                                    <p className="text-sm font-semibold text-white/70 mt-0.5">{val}</p>
+                                                <div key={label} className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                                                    <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                                                    <p className="text-sm font-bold" style={{ color: 'var(--text-secondary)' }}>{val}</p>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
 
                                     {/* Action buttons */}
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:border-l lg:border-[var(--border)] lg:pl-5 lg:ml-2">
+                                        {/* Access */}
+                                        <button onClick={() => navigate(`/${unit.slug}/dashboard`)} className="btn-accent flex items-center gap-1.5 px-3 py-2 text-xs">
+                                            <Eye size={14} /> Acessar
+                                        </button>
+
                                         {/* Toggle active */}
-                                        <button onClick={() => handleToggle(unit)} title={unit.active ? 'Desativar' : 'Ativar'} className={`p-2.5 rounded-xl transition-all ${unit.active ? 'text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20' : 'text-white/30 hover:bg-white/5 border border-white/10'}`}>
-                                            <Power size={16} />
+                                        <button onClick={() => handleToggle(unit)} title={unit.active ? 'Desativar' : 'Ativar'} className="p-2 rounded-lg transition-all border" style={unit.active ? { color: '#34d399', background: 'rgba(52, 211, 153, 0.05)', borderColor: 'rgba(52, 211, 153, 0.15)' } : { color: 'var(--text-muted)', background: 'transparent', borderColor: 'var(--border)' }}>
+                                            <Power size={18} />
                                         </button>
 
                                         {/* Send notification */}
-                                        <button onClick={() => setNotification({ open: true, target: unit.id, message: '' })} title="Enviar notificação" className="p-2.5 rounded-xl text-white/30 hover:text-cyan-400 hover:bg-cyan-500/10 border border-white/10 transition-all">
-                                            <Send size={16} />
+                                        <button onClick={() => setNotification({ open: true, target: unit.id, message: '' })} title="Enviar notificação" className="p-2 border border-[var(--border)] rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => { e.currentTarget.style.color = 'var(--info)'; e.currentTarget.style.borderColor = 'var(--info)'; }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                                            <Send size={18} />
                                         </button>
 
                                         {/* Edit */}
-                                        <button onClick={() => setEditTarget(unit)} title="Editar unidade" className="p-2.5 rounded-xl text-white/30 hover:text-yellow-400 hover:bg-yellow-500/10 border border-white/10 transition-all">
-                                            <Pencil size={16} />
+                                        <button onClick={() => setEditTarget(unit)} title="Editar unidade" className="p-2 border border-[var(--border)] rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                                            <Pencil size={18} />
                                         </button>
 
                                         {/* Delete */}
-                                        <button onClick={() => setDeleteTarget(unit)} title="Excluir unidade" className="p-2.5 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/10 border border-white/10 transition-all">
-                                            <Trash2 size={16} />
-                                        </button>
-
-                                        {/* Access */}
-                                        <button onClick={() => navigate(`/${unit.slug}/dashboard`)} className="flex items-center gap-1.5 px-3 py-2.5 bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 hover:bg-cyan-400/20 text-sm font-medium rounded-xl transition-all">
-                                            <Eye size={14} /> Acessar
+                                        <button onClick={() => setDeleteTarget(unit)} title="Excluir unidade" className="p-2 border border-[var(--border)] rounded-lg transition-all" style={{ color: 'rgba(239, 68, 68, 0.6)' }} onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#ef4444'; }} onMouseLeave={e => { e.currentTarget.style.color = 'rgba(239, 68, 68, 0.6)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                                            <Trash2 size={18} />
                                         </button>
                                     </div>
                                 </div>
@@ -274,23 +269,23 @@ export default function UnitsList() {
             {notification.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setNotification(n => ({ ...n, open: false }))} />
-                    <div className="relative glass-card glow-border p-6 w-full max-w-md animate-fadeIn">
-                        <h3 className="text-lg font-semibold text-white mb-4">Enviar Notificação</h3>
+                    <div className="relative border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn" style={{ background: '#0B0B0F' }}>
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-5" style={{ color: 'var(--info)' }}>Enviar Notificação</h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm text-cyan-300/70 mb-1.5 block">Destinatário</label>
-                                <select value={notification.target} onChange={e => setNotification(n => ({ ...n, target: e.target.value }))} className="input-futuristic w-full">
+                                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Destinatário</label>
+                                <select value={notification.target} onChange={e => setNotification(n => ({ ...n, target: e.target.value }))} className={inp}>
                                     <option value="all">Todas as unidades</option>
                                     {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-sm text-cyan-300/70 mb-1.5 block">Mensagem</label>
-                                <textarea value={notification.message} onChange={e => setNotification(n => ({ ...n, message: e.target.value }))} placeholder="Digite..." rows={3} className="input-futuristic w-full resize-none" />
+                                <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Mensagem</label>
+                                <textarea value={notification.message} onChange={e => setNotification(n => ({ ...n, message: e.target.value }))} placeholder="Digite..." rows={3} className={`${inp} resize-none`} />
                             </div>
                             <div className="flex gap-2">
                                 <button onClick={() => setNotification(n => ({ ...n, open: false }))} className="btn-ghost flex-1">Cancelar</button>
-                                <button onClick={handleSend} className="btn-primary flex-1">Enviar</button>
+                                <button onClick={handleSend} className="btn-primary flex-1" style={{ background: 'var(--info)' }}>Enviar</button>
                             </div>
                         </div>
                     </div>

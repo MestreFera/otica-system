@@ -8,7 +8,7 @@ import { SkeletonCard } from '../../components/ui/SkeletonLoader';
 import {
     Scan, LogOut, Zap, History, Settings, BarChart2, Plus, Play, Pause, Trash2,
     RefreshCw, ChevronDown, ChevronUp, X, Eye, Clock, CheckCircle2, XCircle,
-    Send, Code2, Layers
+    Send, Code2, Layers, TrendingUp, Building2, Terminal
 } from 'lucide-react';
 
 const TABS = ['Visão Geral', 'Automações', 'Histórico', 'Configurações'];
@@ -32,6 +32,9 @@ const EMPTY_FORM = {
     trigger_value: '', action_type: 'webhook', webhook_url: '', webhook_method: 'POST',
     webhook_headers: '{}', message_template: '', active: true, delay_minutes: 0,
 };
+
+// ─── Reusable input style ─────────────────────────────────────────────────────
+const inp = `w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all duration-200 text-sm`;
 
 // ─── Payload preview ──────────────────────────────────────────────────────────
 function buildPreview(template, unitName = 'Ótica Exemplo') {
@@ -99,7 +102,6 @@ export default function AutomationsHub() {
     async function handleCreate(e) {
         e.preventDefault();
         const payload = { ...form };
-        // Parse headers safely
         try { payload.webhook_headers = JSON.parse(form.webhook_headers || '{}'); } catch { payload.webhook_headers = {}; }
         const { success, error } = await automationService.create(payload);
         if (success) {
@@ -154,64 +156,100 @@ export default function AutomationsHub() {
 
     return (
         <div className="min-h-screen gradient-master dark-scroll">
-            <header className="border-b border-white/[0.04] px-6 py-4 flex items-center gap-4 bg-[#0d1225]/60 backdrop-blur-xl sticky top-0 z-20">
+            <header className="sticky top-0 z-20 px-5 lg:px-8 py-3.5 flex items-center gap-4 backdrop-blur-xl" style={{ background: 'rgba(11, 11, 15, 0.85)', borderBottom: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-3">
-                    <div className="logo-icon"><Scan size={20} className="text-white" /></div>
+                    <div className="logo-icon"><Scan size={18} className="text-[#0B0B0F]" /></div>
                     <div>
-                        <p className="text-[10px] text-cyan-400/60 font-semibold uppercase tracking-widest">ÓticaSystem</p>
-                        <p className="text-sm font-bold text-white">Hub de Automações</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: 'var(--accent)' }}>ÓticaSystem</p>
+                        <p className="text-sm font-bold text-white">Painel Master</p>
                     </div>
                 </div>
-                <nav className="flex items-center gap-1 ml-8">
-                    <Link to="/master/dashboard" className="px-4 py-2 text-sm text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all">Dashboard</Link>
-                    <Link to="/master/unidades" className="px-4 py-2 text-sm text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all">Unidades</Link>
-                    <Link to="/master/automations" className="px-4 py-2 text-sm text-cyan-400 bg-cyan-400/10 rounded-lg font-medium border border-cyan-400/20">Automações</Link>
+
+                <nav className="flex items-center gap-1 ml-6">
+                    <Link to="/master/dashboard" className="nav-item text-xs px-3.5 py-2">
+                        <TrendingUp size={14} /> Dashboard
+                    </Link>
+                    <Link to="/master/unidades" className="nav-item text-xs px-3.5 py-2">
+                        <Building2 size={14} /> Unidades
+                    </Link>
+                    <Link to="/master/automations" className="nav-item active text-xs px-3.5 py-2">
+                        <Zap size={14} /> Automações
+                    </Link>
                 </nav>
+
                 <div className="flex-1" />
-                <button onClick={async () => { await logout(); navigate('/master/login'); }} className="flex items-center gap-2 px-3 py-2 text-sm text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"><LogOut size={16} /></button>
+
+                <button onClick={async () => { await logout(); navigate('/master/login'); }}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg transition-all"
+                    style={{ color: 'rgba(239, 68, 68, 0.6)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#f87171'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(239,68,68,0.6)'; }}>
+                    <LogOut size={15} /> Sair
+                </button>
             </header>
 
-            <div className="p-6 max-w-7xl mx-auto">
+            <div className="p-5 lg:p-8 max-w-[1440px] mx-auto animate-fadeIn">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                        <h1 className="text-2xl font-bold text-white tracking-tight">Hub de <span style={{ color: 'var(--accent)' }}>Automações</span></h1>
+                        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Gerencie webhooks e eventos do sistema</p>
+                    </div>
+                    {tab === 1 && (
+                        <button onClick={openModal} className="btn-primary flex items-center gap-2 text-xs px-5 py-2.5">
+                            <Plus size={16} /> Nova Automação
+                        </button>
+                    )}
+                </div>
+
                 {/* Tabs */}
-                <div className="flex gap-2 mb-6 border-b border-white/[0.04] pb-4">
+                <div className="flex gap-2 mb-8 border-b border-[var(--border)] pb-4 overflow-x-auto hide-scrollbar">
                     {TABS.map((t, i) => (
-                        <button key={t} onClick={() => setTab(i)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === i ? 'bg-cyan-400/15 text-cyan-400 border border-cyan-400/25' : 'text-white/30 hover:text-white/60 hover:bg-white/5'}`}>
-                            {[<BarChart2 size={14} />, <Zap size={14} />, <History size={14} />, <Settings size={14} />][i]}
+                        <button key={t} onClick={() => setTab(i)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap"
+                            style={tab === i ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' } : { color: 'var(--text-secondary)', border: '1px solid transparent' }}
+                            onMouseEnter={e => { if (tab !== i) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                            onMouseLeave={e => { if (tab !== i) e.currentTarget.style.background = 'transparent'; }}>
+                            {[<BarChart2 size={16} />, <Zap size={16} />, <History size={16} />, <Settings size={16} />][i]}
                             <span>{t}</span>
                         </button>
                     ))}
                 </div>
 
-                {loading ? <>{[1, 2, 3].map(i => <SkeletonCard key={i} />)}</> : (
-                    <>
+                {loading ? <div className="flex justify-center py-20"><div className="w-8 h-8 rounded-full animate-spin" style={{ border: '2px solid var(--border)', borderTopColor: 'var(--accent)' }} /></div> : (
+                    <div className="stagger-children">
                         {/* ── TAB 0: Overview ── */}
                         {tab === 0 && (
                             <div className="space-y-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {[
-                                        { label: 'Automações Ativas', value: automations.filter(a => a.active).length, color: 'text-cyan-400' },
-                                        { label: 'Total de Automações', value: automations.length, color: 'text-white' },
-                                        { label: 'Execuções Hoje', value: todayLogs.length, color: 'text-amber-400' },
-                                        { label: 'Taxa de Sucesso', value: `${successRate}%`, color: successRate >= 80 ? 'text-emerald-400' : 'text-red-400' },
+                                        { label: 'Automações Ativas', value: automations.filter(a => a.active).length, color: 'var(--accent)' },
+                                        { label: 'Total de Automações', value: automations.length, color: 'var(--text-secondary)' },
+                                        { label: 'Execuções Hoje', value: todayLogs.length, color: 'var(--info)' },
+                                        { label: 'Taxa de Sucesso', value: `${successRate}%`, color: successRate >= 80 ? '#4ade80' : '#f87171' },
                                     ].map(({ label, value, color }) => (
-                                        <div key={label} className="metric-card">
-                                            <p className="text-xs text-white/25 uppercase tracking-wider">{label}</p>
-                                            <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
+                                        <div key={label} className="metric-card group">
+                                            <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                                            <p className="text-3xl font-bold transition-transform group-hover:scale-[1.02]" style={{ color }}>{value}</p>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="glass-card p-6">
-                                    <h3 className="text-sm font-bold text-white mb-4">Últimas Execuções</h3>
-                                    <div className="space-y-2">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-5 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Terminal size={14} /> Últimas Execuções</h3>
+                                    <div className="space-y-3">
                                         {recentLogs.slice(0, 12).map(l => (
-                                            <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.03]">
-                                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${l.status === 'success' ? 'bg-emerald-400' : l.status === 'error' ? 'bg-red-400' : 'bg-amber-400'}`} />
-                                                <span className="text-xs text-white/60 flex-1 truncate">{l.automations?.name || 'Automação'} — {l.client_name || 'Sistema'}</span>
-                                                {l.duration_ms && <span className="text-[10px] text-white/20">{l.duration_ms}ms</span>}
-                                                <span className="text-[10px] text-white/15">{new Date(l.created_at).toLocaleTimeString('pt-BR')}</span>
+                                            <div key={l.id} className="flex items-center gap-4 p-3.5 rounded-xl transition-colors hover:bg-white/[0.04]" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                                                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-lg`} style={{ background: l.status === 'success' ? '#4ade80' : l.status === 'error' ? '#ef4444' : '#f59e0b', boxShadow: `0 0 10px ${l.status === 'success' ? '#4ade8080' : l.status === 'error' ? '#ef444480' : '#f59e0b80'}` }} />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-bold text-white truncate">{l.automations?.name || 'Automação'}</p>
+                                                    <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{l.client_name || 'Sistema'}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{new Date(l.created_at).toLocaleTimeString('pt-BR')}</p>
+                                                    {l.duration_ms && <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-secondary)' }}>{l.duration_ms}ms</p>}
+                                                </div>
                                             </div>
                                         ))}
-                                        {recentLogs.length === 0 && <p className="text-white/15 text-sm text-center py-8">Nenhuma execução registrada</p>}
+                                        {recentLogs.length === 0 && <p className="text-xs text-center py-8" style={{ color: 'var(--text-muted)' }}>Nenhuma execução registrada.</p>}
                                     </div>
                                 </div>
                             </div>
@@ -220,59 +258,55 @@ export default function AutomationsHub() {
                         {/* ── TAB 1: Automations ── */}
                         {tab === 1 && (
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                    <select value={filterUnit} onChange={e => setFilterUnit(e.target.value)} className="input-futuristic text-xs py-2">
-                                        <option value="">Todas as unidades</option>
+                                <div className="flex items-center gap-2 mb-6">
+                                    <select value={filterUnit} onChange={e => setFilterUnit(e.target.value)} className={inp} style={{ maxWidth: '300px' }}>
+                                        <option value="">Todas as unidades ({units.length})</option>
                                         {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                     </select>
-                                    <button onClick={openModal} className="btn-primary text-sm flex items-center gap-2"><Plus size={16} /> Nova Automação</button>
                                 </div>
 
                                 {filtered.map(auto => {
                                     const successPct = auto.runs_count ? Math.round((auto.success_count || 0) / auto.runs_count * 100) : null;
                                     const lastRun = auto.last_run_at ? new Date(auto.last_run_at).toLocaleString('pt-BR') : 'Nunca executada';
                                     return (
-                                        <div key={auto.id} className="glass-card p-5">
-                                            <div className="flex items-start gap-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${auto.active ? 'bg-cyan-400/15 text-cyan-400' : 'bg-white/5 text-white/20'}`}>
-                                                    <Zap size={18} />
+                                        <div key={auto.id} className="glass-card p-6">
+                                            <div className="flex flex-col md:flex-row md:items-start gap-5">
+                                                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={auto.active ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--border-accent)' } : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.2)' }}>
+                                                    <Zap size={20} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <h3 className="text-sm font-semibold text-white">{auto.name}</h3>
-                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${auto.active ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : 'bg-white/5 text-white/30 border-white/10'}`}>
+                                                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                                        <h3 className="text-base font-bold text-white">{auto.name}</h3>
+                                                        <span className="text-[9px] px-2.5 py-1 rounded-md font-bold uppercase tracking-widest border" style={auto.active ? { background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', borderColor: 'rgba(52, 211, 153, 0.2)' } : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}>
                                                             {auto.active ? 'Ativa' : 'Inativa'}
                                                         </span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded" style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>{auto.units?.name}</span>
                                                     </div>
-                                                    <p className="text-xs text-white/30 mt-0.5">{auto.units?.name} · {TRIGGER_LABELS[auto.trigger_event] || auto.trigger_event} → {auto.action_type === 'webhook' ? 'Webhook' : 'Notificação'}</p>
+                                                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Gatilho: <span style={{ color: 'var(--text-secondary)' }}>{TRIGGER_LABELS[auto.trigger_event] || auto.trigger_event}</span> &bull; Ação: <span style={{ color: 'var(--info)' }}>{auto.action_type === 'webhook' ? 'Webhook' : 'Notificação'}</span></p>
 
-                                                    {/* Stats row */}
-                                                    <div className="flex items-center gap-4 mt-3 flex-wrap">
-                                                        <div className="flex items-center gap-1.5 text-xs text-white/25">
-                                                            <Clock size={11} />
-                                                            <span>{lastRun}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-xs">
-                                                            <span className="text-white/25">{auto.runs_count || 0} exec</span>
-                                                            <span className="text-emerald-400/70">{auto.success_count || 0}✓</span>
-                                                            {(auto.error_count || 0) > 0 && <span className="text-red-400/70">{auto.error_count}✕</span>}
-                                                            {successPct !== null && (
-                                                                <span className={`font-semibold ${successPct >= 80 ? 'text-emerald-400' : successPct >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{successPct}%</span>
-                                                            )}
+                                                    {/* Stats */}
+                                                    <div className="flex items-center gap-4 mt-4 flex-wrap bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.04]">
+                                                        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}><Clock size={12} /> {lastRun}</div>
+                                                        <div className="w-px h-4 bg-white/10" />
+                                                        <div className="flex items-center gap-3 text-xs font-bold">
+                                                            <span style={{ color: 'var(--text-secondary)' }}>{auto.runs_count || 0} EXEC</span>
+                                                            <span style={{ color: '#34d399' }}>{auto.success_count || 0} ✓</span>
+                                                            {(auto.error_count || 0) > 0 && <span style={{ color: '#f87171' }}>{auto.error_count} ✕</span>}
+                                                            {successPct !== null && <span style={{ color: successPct >= 80 ? '#34d399' : successPct >= 50 ? '#f59e0b' : '#f87171' }}>{successPct}% OK</span>}
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Actions */}
-                                                <div className="flex gap-1.5 flex-shrink-0">
-                                                    <button onClick={() => handleToggle(auto)} title={auto.active ? 'Pausar' : 'Ativar'} className={`p-2 rounded-lg transition-all ${auto.active ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-white/20 hover:bg-white/5'}`}>
-                                                        {auto.active ? <Pause size={14} /> : <Play size={14} />}
+                                                <div className="flex items-center gap-2 flex-wrap md:flex-col md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/[0.05] md:border-t-0 md:border-l md:pl-5">
+                                                    <button onClick={() => handleToggle(auto)} className="btn-ghost text-xs w-full flex justify-center py-2" style={auto.active ? { color: '#f59e0b' } : { color: '#34d399' }}>
+                                                        {auto.active ? <Pause size={14} className="mr-1.5" /> : <Play size={14} className="mr-1.5" />} {auto.active ? 'Pausar' : 'Ativar'}
                                                     </button>
-                                                    <button onClick={() => handleTest(auto)} disabled={testingId === auto.id} title="Testar webhook" className="p-2 rounded-lg text-cyan-400/60 hover:bg-cyan-500/10 transition-all disabled:opacity-40">
-                                                        {testingId === auto.id ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                                                    <button onClick={() => handleTest(auto)} disabled={testingId === auto.id} className="btn-ghost text-xs w-full flex justify-center py-2 disabled:opacity-50" style={{ color: 'var(--info)' }}>
+                                                        {testingId === auto.id ? <RefreshCw size={14} className="mr-1.5 animate-spin" /> : <Send size={14} className="mr-1.5" />} Testar
                                                     </button>
-                                                    <button onClick={() => handleDelete(auto)} disabled={deletingId === auto.id} title="Excluir" className="p-2 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-40">
-                                                        {deletingId === auto.id ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                                    <button onClick={() => handleDelete(auto)} disabled={deletingId === auto.id} className="btn-ghost text-xs w-full flex justify-center py-2 disabled:opacity-50" style={{ color: 'rgba(239, 68, 68, 0.7)' }}>
+                                                        {deletingId === auto.id ? <RefreshCw size={14} className="mr-1.5 animate-spin" /> : <Trash2 size={14} className="mr-1.5" />} Excluir
                                                     </button>
                                                 </div>
                                             </div>
@@ -280,10 +314,12 @@ export default function AutomationsHub() {
                                     );
                                 })}
                                 {filtered.length === 0 && (
-                                    <div className="text-center py-16 text-white/15">
-                                        <Zap size={40} className="mx-auto mb-3 opacity-30" />
-                                        <p className="text-sm">Nenhuma automação criada</p>
-                                        <button onClick={openModal} className="mt-4 btn-primary text-xs px-4 py-2">Criar primeira automação</button>
+                                    <div className="text-center py-24 glass-card max-w-2xl mx-auto">
+                                        <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+                                            <Zap size={24} />
+                                        </div>
+                                        <p className="text-lg font-bold text-white mb-2">Nenhuma automação encontrada</p>
+                                        <button onClick={openModal} className="btn-primary mt-4 px-6 py-2.5 text-xs">Criar primeira automação</button>
                                     </div>
                                 )}
                             </div>
@@ -292,58 +328,71 @@ export default function AutomationsHub() {
                         {/* ── TAB 2: History ── */}
                         {tab === 2 && (
                             <div className="space-y-4">
-                                <div className="flex gap-2 flex-wrap">
-                                    <select value={logFilters.status} onChange={e => setLogFilters(f => ({ ...f, status: e.target.value }))} className="input-futuristic text-xs py-2">
+                                <div className="flex gap-3 mb-6">
+                                    <select value={logFilters.status} onChange={e => setLogFilters(f => ({ ...f, status: e.target.value }))} className={inp} style={{ maxWidth: '200px' }}>
                                         <option value="">Todos os status</option>
                                         <option value="success">✅ Sucesso</option>
                                         <option value="error">❌ Erro</option>
                                     </select>
-                                    <select value={logFilters.unitId} onChange={e => setLogFilters(f => ({ ...f, unitId: e.target.value }))} className="input-futuristic text-xs py-2">
+                                    <select value={logFilters.unitId} onChange={e => setLogFilters(f => ({ ...f, unitId: e.target.value }))} className={inp} style={{ maxWidth: '250px' }}>
                                         <option value="">Todas as unidades</option>
                                         {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                     </select>
                                 </div>
                                 {logs.data.map(l => (
                                     <div key={l.id} className="glass-card overflow-hidden">
-                                        <button onClick={() => setExpandedLog(expandedLog === l.id ? null : l.id)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-white/[0.02] transition-colors">
-                                            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${l.status === 'success' ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                                            <span className="text-sm text-white/70 flex-1 truncate">{l.automations?.name} — {l.client_name || 'N/A'}</span>
-                                            {l.duration_ms && <span className="text-xs text-white/20">{l.duration_ms}ms</span>}
-                                            {l.response_status && <span className={`text-xs px-1.5 py-0.5 rounded font-mono ${l.response_status < 300 ? 'text-emerald-400 bg-emerald-400/10' : 'text-red-400 bg-red-400/10'}`}>{l.response_status}</span>}
-                                            <span className="text-xs text-white/15">{new Date(l.created_at).toLocaleString('pt-BR')}</span>
-                                            {expandedLog === l.id ? <ChevronUp size={14} className="text-white/20" /> : <ChevronDown size={14} className="text-white/20" />}
+                                        <button onClick={() => setExpandedLog(expandedLog === l.id ? null : l.id)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-white/[0.02]">
+                                            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: l.status === 'success' ? '#4ade80' : '#ef4444', boxShadow: `0 0 10px ${l.status === 'success' ? '#4ade8080' : '#ef444480'}` }} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-white truncate mb-0.5">{l.automations?.name}</p>
+                                                <p className="text-[11px] truncate uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{l.client_name || 'N/A'}</p>
+                                            </div>
+                                            <div className="text-right mr-4 hidden sm:block">
+                                                <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>{new Date(l.created_at).toLocaleString('pt-BR')}</p>
+                                                <div className="flex items-center justify-end gap-2 text-[10px] font-mono">
+                                                    {l.duration_ms && <span style={{ color: 'var(--text-secondary)' }}>{l.duration_ms}ms</span>}
+                                                    {l.response_status && <span className="px-1.5 py-0.5 rounded" style={l.response_status < 300 ? { background: 'rgba(52, 211, 153, 0.1)', color: '#34d399' } : { background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>{l.response_status}</span>}
+                                                </div>
+                                            </div>
+                                            {expandedLog === l.id ? <ChevronUp size={16} style={{ color: 'var(--accent)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
                                         </button>
                                         {expandedLog === l.id && (
-                                            <div className="px-4 pb-4 border-t border-white/[0.03] pt-3 space-y-3">
+                                            <div className="px-6 pb-6 border-t border-white/[0.04] pt-5 space-y-4 bg-black/20">
+                                                <div className="sm:hidden mb-4">
+                                                    <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Data e Hora</p>
+                                                    <p className="text-xs text-white">{new Date(l.created_at).toLocaleString('pt-BR')}</p>
+                                                </div>
                                                 <div>
-                                                    <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Code2 size={10} /> Payload Enviado</p>
-                                                    <div className="bg-black/40 rounded-lg p-3 text-xs font-mono text-cyan-300/70 overflow-auto max-h-40">
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style={{ color: 'var(--info)' }}><Code2 size={12} /> Payload Enviado</p>
+                                                    <div className="bg-[#0B0B0F] rounded-xl p-4 text-[11px] font-mono border border-white/[0.05] overflow-auto max-h-48" style={{ color: 'var(--text-secondary)' }}>
                                                         <pre>{JSON.stringify(l.payload, null, 2)}</pre>
                                                     </div>
                                                 </div>
                                                 {l.response_body && (
                                                     <div>
-                                                        <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Layers size={10} /> Resposta Recebida</p>
-                                                        <div className="bg-black/40 rounded-lg p-3 text-xs font-mono text-white/40 overflow-auto max-h-32">
+                                                        <p className="text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}><Layers size={12} /> Resposta Recebida</p>
+                                                        <div className="bg-[#0B0B0F] rounded-xl p-4 text-[11px] font-mono border border-white/[0.05] overflow-auto max-h-40" style={{ color: 'var(--text-muted)' }}>
                                                             <pre>{l.response_body}</pre>
                                                         </div>
                                                     </div>
                                                 )}
                                                 {l.status === 'error' && (
-                                                    <button onClick={() => handleResend(l)} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
-                                                        <RefreshCw size={12} /> Reenviar
-                                                    </button>
+                                                    <div className="pt-2">
+                                                        <button onClick={() => handleResend(l)} className="btn-primary text-xs px-4 py-2 flex items-center gap-2" style={{ background: 'var(--info)' }}>
+                                                            <RefreshCw size={14} /> Reenviar Webhook
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
                                     </div>
                                 ))}
-                                {logs.data.length === 0 && <p className="text-center text-white/15 py-12">Nenhum log encontrado</p>}
+                                {logs.data.length === 0 && <p className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Nenhum log encontrado</p>}
                                 {logs.total > 20 && (
-                                    <div className="flex justify-center gap-2 pt-2">
-                                        <button disabled={logPage === 0} onClick={() => setLogPage(p => p - 1)} className="btn-ghost text-xs">← Anterior</button>
-                                        <span className="text-xs text-white/20 py-2">Página {logPage + 1} de {Math.ceil(logs.total / 20)}</span>
-                                        <button disabled={(logPage + 1) * 20 >= logs.total} onClick={() => setLogPage(p => p + 1)} className="btn-ghost text-xs">Próxima →</button>
+                                    <div className="flex justify-center gap-3 pt-6">
+                                        <button disabled={logPage === 0} onClick={() => setLogPage(p => p - 1)} className="btn-ghost text-xs disabled:opacity-30">← Anterior</button>
+                                        <span className="text-xs font-bold uppercase tracking-widest flex items-center" style={{ color: 'var(--text-secondary)' }}>Página {logPage + 1} de {Math.ceil(logs.total / 20)}</span>
+                                        <button disabled={(logPage + 1) * 20 >= logs.total} onClick={() => setLogPage(p => p + 1)} className="btn-ghost text-xs disabled:opacity-30">Próxima →</button>
                                     </div>
                                 )}
                             </div>
@@ -351,150 +400,165 @@ export default function AutomationsHub() {
 
                         {/* ── TAB 3: Config ── */}
                         {tab === 3 && (
-                            <div className="glass-card p-6 max-w-xl">
+                            <div className="glass-card p-8 max-w-xl">
                                 <h3 className="text-lg font-bold text-white mb-2">Configurações Globais</h3>
-                                <p className="text-sm text-white/30 mb-6">Defaults para webhooks e retry.</p>
-                                <div className="space-y-4">
+                                <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>Opções gerais para processamento de webhooks.</p>
+                                <div className="space-y-5">
                                     <div>
-                                        <label className="text-xs text-cyan-300/60 uppercase tracking-wider block mb-1.5">Timeout de Requisição</label>
-                                        <select className="input-futuristic w-full"><option>5 segundos</option><option>10 segundos</option><option>30 segundos</option></select>
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--text-muted)' }}>Timeout de Requisição</label>
+                                        <select className={inp}><option>5 segundos</option><option>10 segundos</option><option>30 segundos</option></select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-cyan-300/60 uppercase tracking-wider block mb-1.5">Tentativas em caso de erro</label>
-                                        <select className="input-futuristic w-full"><option>1 tentativa</option><option>2 tentativas</option><option>3 tentativas</option></select>
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--text-muted)' }}>Tentativas (Retries)</label>
+                                        <select className={inp}><option>1 tentativa</option><option>2 tentativas</option><option>3 tentativas</option></select>
+                                    </div>
+                                    <div className="pt-4 border-t border-[var(--border)]">
+                                        <button className="btn-primary" disabled>Salvar Configurações</button>
+                                        <p className="text-[10px] mt-2" style={{ color: 'var(--text-muted)' }}>* Em breve</p>
                                     </div>
                                 </div>
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
 
             {/* ── Create Modal ── */}
             {modalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={() => setModalOpen(false)} />
-                    <div className="relative glass-card glow-border w-full max-w-2xl max-h-[90vh] overflow-y-auto dark-scroll animate-fadeIn">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setModalOpen(false)} />
+                    <div className="relative border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto dark-scroll shadow-2xl rounded-2xl animate-fadeIn" style={{ background: '#0B0B0F' }}>
                         {/* Modal header */}
-                        <div className="sticky top-0 bg-[#0d1225]/90 backdrop-blur-xl border-b border-white/[0.06] px-6 py-4 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-white">Nova Automação</h3>
-                            <button onClick={() => setModalOpen(false)} className="text-white/30 hover:text-white transition-colors"><X size={18} /></button>
+                        <div className="sticky top-0 bg-[#0B0B0F]/95 backdrop-blur-xl border-b border-white/[0.06] px-6 py-4 flex items-center justify-between z-20">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-white">Configurar Automação</h3>
+                            <button onClick={() => setModalOpen(false)} className="text-white/30 hover:text-[var(--accent)] transition-colors"><X size={18} /></button>
                         </div>
 
-                        <div className="p-6 space-y-5">
+                        <div className="p-6 space-y-6">
                             {/* Templates */}
                             <div>
-                                <p className="text-xs text-cyan-400/60 uppercase tracking-widest mb-3">⚡ Templates Prontos — clique para aplicar</p>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <p className="text-[10px] font-bold uppercase tracking-widest mb-3 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}><Zap size={12} /> Comece com um template</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {Object.entries(automationService.TEMPLATES).map(([k, t]) => (
                                         <button key={k} onClick={() => loadTemplate(k)}
-                                            className={`text-left p-3 rounded-xl border transition-all text-xs ${form.name === t.name ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/70 hover:bg-white/[0.03]'}`}>
-                                            <span className="text-base">{TEMPLATE_ICONS[k] || '⚡'}</span>
-                                            <p className="mt-1 font-medium leading-tight">{t.name}</p>
-                                            <p className="text-white/25 mt-0.5 text-[10px]">{TRIGGER_LABELS[t.trigger_event]}</p>
+                                            className="text-left p-4 rounded-xl border transition-all"
+                                            style={form.name === t.name ? { border: '1px solid var(--border-accent)', background: 'var(--accent-dim)' } : { border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}
+                                            onMouseEnter={e => { if (form.name !== t.name) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                                            onMouseLeave={e => { if (form.name !== t.name) e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                                            <span className="text-xl mb-2 block">{TEMPLATE_ICONS[k] || '⚡'}</span>
+                                            <p className="text-[11px] font-bold text-white mb-1 uppercase tracking-wide leading-tight">{t.name}</p>
+                                            <p className="text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{TRIGGER_LABELS[t.trigger_event]}</p>
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
-                            <form onSubmit={handleCreate} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={handleCreate} className="space-y-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-[var(--border)]">
                                     <div>
-                                        <label className="text-xs text-cyan-300/60 block mb-1.5">Unidade *</label>
-                                        <select value={form.unit_id} onChange={e => setForm(f => ({ ...f, unit_id: e.target.value }))} className="input-futuristic w-full" required>
-                                            <option value="">Selecionar...</option>
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-secondary)' }}>Unidade Alvo *</label>
+                                        <select value={form.unit_id} onChange={e => setForm(f => ({ ...f, unit_id: e.target.value }))} className={inp} required>
+                                            <option value="">Selecione...</option>
                                             {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-cyan-300/60 block mb-1.5">Nome *</label>
-                                        <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-futuristic w-full" required placeholder="Ex: Aviso pedido pronto" />
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nome da Regra *</label>
+                                        <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inp} required placeholder="Ex: Aviso WhatsApp Pronto" />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs text-cyan-300/60 block mb-1.5">Descrição</label>
-                                    <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="input-futuristic w-full" placeholder="Opcional" />
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-secondary)' }}>Descrição (opcional)</label>
+                                    <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className={inp} placeholder="Para organização interna..." />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 rounded-xl bg-white/[0.02] border border-[var(--border)]">
                                     <div>
-                                        <label className="text-xs text-cyan-300/60 block mb-1.5">Gatilho</label>
-                                        <select value={form.trigger_event} onChange={e => setForm(f => ({ ...f, trigger_event: e.target.value }))} className="input-futuristic w-full">
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}><Zap size={12} /> Gatilho</label>
+                                        <select value={form.trigger_event} onChange={e => setForm(f => ({ ...f, trigger_event: e.target.value }))} className={inp}>
                                             {Object.entries(TRIGGER_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-cyan-300/60 block mb-1.5">Delay (minutos)</label>
-                                        <input type="number" min="0" value={form.delay_minutes} onChange={e => setForm(f => ({ ...f, delay_minutes: Number(e.target.value) }))} className="input-futuristic w-full" placeholder="0 = imediato" />
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}><Clock size={12} /> Atraso / Delay (min)</label>
+                                        <input type="number" min="0" value={form.delay_minutes} onChange={e => setForm(f => ({ ...f, delay_minutes: Number(e.target.value) }))} className={inp} placeholder="0 = Imediato" />
                                     </div>
                                 </div>
 
                                 {form.trigger_event === 'days_in_production' && (
-                                    <div>
-                                        <label className="text-xs text-cyan-300/60 block mb-1.5">Dias em produção</label>
-                                        <input type="number" value={form.trigger_value} onChange={e => setForm(f => ({ ...f, trigger_value: e.target.value }))} className="input-futuristic w-full" placeholder="7" />
+                                    <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: '#f59e0b' }}>Quantidade de dias em produção</label>
+                                        <input type="number" value={form.trigger_value} onChange={e => setForm(f => ({ ...f, trigger_value: e.target.value }))} className={inp} placeholder="Ex: 7" />
                                     </div>
                                 )}
 
                                 <div>
-                                    <label className="text-xs text-cyan-300/60 block mb-1.5">Ação</label>
-                                    <select value={form.action_type} onChange={e => setForm(f => ({ ...f, action_type: e.target.value }))} className="input-futuristic w-full">
-                                        <option value="webhook">Webhook (n8n, Make, Zapier, WhatsApp)</option>
-                                        <option value="internal_notification">Notificação Interna</option>
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-secondary)' }}>Tipo de Ação</label>
+                                    <select value={form.action_type} onChange={e => setForm(f => ({ ...f, action_type: e.target.value }))} className={inp}>
+                                        <option value="webhook">Disparar Webhook HTTP (n8n, Zapier, etc)</option>
+                                        <option value="internal_notification">Notificação Interna de Sistema</option>
                                     </select>
                                 </div>
 
                                 {form.action_type === 'webhook' && (
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div className="col-span-2">
-                                                <label className="text-xs text-cyan-300/60 block mb-1.5">URL do Webhook</label>
-                                                <input value={form.webhook_url} onChange={e => setForm(f => ({ ...f, webhook_url: e.target.value }))} className="input-futuristic w-full" placeholder="https://..." />
+                                    <div className="space-y-4 p-5 rounded-xl border border-[var(--border)] bg-black/20">
+                                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                            <div className="sm:col-span-3">
+                                                <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--info)' }}>URL de Destino *</label>
+                                                <input value={form.webhook_url} onChange={e => setForm(f => ({ ...f, webhook_url: e.target.value }))} className={inp} placeholder="https://seu-webhook.com/..." required />
                                             </div>
                                             <div>
-                                                <label className="text-xs text-cyan-300/60 block mb-1.5">Método</label>
-                                                <select value={form.webhook_method} onChange={e => setForm(f => ({ ...f, webhook_method: e.target.value }))} className="input-futuristic w-full">
-                                                    <option>POST</option><option>GET</option>
+                                                <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-secondary)' }}>Método</label>
+                                                <select value={form.webhook_method} onChange={e => setForm(f => ({ ...f, webhook_method: e.target.value }))} className={inp}>
+                                                    <option>POST</option><option>GET</option><option>PUT</option>
                                                 </select>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-xs text-cyan-300/60 block mb-1.5">Headers (JSON)</label>
-                                            <input value={form.webhook_headers} onChange={e => setForm(f => ({ ...f, webhook_headers: e.target.value }))} className="input-futuristic w-full font-mono text-xs" placeholder='{"Authorization": "Bearer token"}' />
+                                            <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-muted)' }}>Headers (JSON opcional)</label>
+                                            <input value={form.webhook_headers} onChange={e => setForm(f => ({ ...f, webhook_headers: e.target.value }))} className={`${inp} font-mono`} placeholder='{"Authorization": "Bearer token..."}' />
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Payload template + preview */}
                                 <div>
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <label className="text-xs text-cyan-300/60">Template do Payload / Mensagem</label>
-                                        <button type="button" onClick={() => setPreviewVisible(v => !v)}
-                                            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition-all ${previewVisible ? 'bg-cyan-400/15 text-cyan-400 border border-cyan-400/20' : 'text-white/30 border border-white/10 hover:text-cyan-400'}`}>
-                                            <Eye size={10} /> Preview
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: 'var(--text-secondary)' }}>Corpo / Payload (JSON)</label>
+                                        <button type="button" onClick={() => setPreviewVisible(v => !v)} className="btn-ghost flex items-center gap-1.5 text-[10px] py-1.5 px-3">
+                                            <Eye size={12} /> {previewVisible ? 'Esconder Preview' : 'Ver Preview'}
                                         </button>
                                     </div>
-                                    <textarea value={form.message_template} onChange={e => setForm(f => ({ ...f, message_template: e.target.value }))} className="input-futuristic w-full font-mono text-xs resize-none" rows={4} placeholder='{"message": "Olá {{cliente_nome}}, seu pedido está pronto!"}' />
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {VARIABLES.map(v => (
-                                            <button key={v} type="button" onClick={() => setForm(f => ({ ...f, message_template: f.message_template + v }))} className="text-[10px] px-2 py-1 rounded-lg bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 hover:bg-cyan-400/20 transition-all">{v}</button>
-                                        ))}
+                                    <textarea value={form.message_template} onChange={e => setForm(f => ({ ...f, message_template: e.target.value }))} className={`${inp} font-mono resize-y min-h-[120px] leading-relaxed`} placeholder='{"text": "Ref: {{cliente_nome}} - Status {{status}}"}' />
+
+                                    <div className="mt-2.5">
+                                        <p className="text-[9px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Variáveis Dinâmicas</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {VARIABLES.map(v => (
+                                                <button key={v} type="button" onClick={() => setForm(f => ({ ...f, message_template: f.message_template + v }))}
+                                                    className="text-[9px] font-mono px-2 py-1 rounded bg-white/[0.03] border border-[var(--border)] transition-colors hover:border-[var(--accent)]" style={{ color: 'var(--accent)' }}>
+                                                    {v}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
+
                                     {previewVisible && (
-                                        <div className="mt-3 rounded-xl border border-cyan-400/20 bg-black/40 overflow-hidden">
-                                            <div className="px-3 py-2 border-b border-white/[0.05] flex items-center gap-2">
-                                                <Code2 size={12} className="text-cyan-400/60" />
-                                                <span className="text-[10px] text-cyan-400/60 uppercase tracking-wider">Preview do payload (dados de exemplo)</span>
+                                        <div className="mt-4 rounded-xl border border-[var(--border)] overflow-hidden bg-[#050508]">
+                                            <div className="px-4 py-2 bg-white/[0.02] border-b border-[var(--border)] flex items-center gap-2">
+                                                <Code2 size={12} style={{ color: 'var(--info)' }} />
+                                                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--info)' }}>Modo Preview (Amostra de dados)</span>
                                             </div>
-                                            <pre className="p-3 text-xs font-mono text-emerald-300/80 overflow-auto max-h-40">{preview}</pre>
+                                            <pre className="p-4 text-[11px] font-mono overflow-auto max-h-64" style={{ color: 'var(--text-secondary)' }}>{preview}</pre>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="flex gap-3 pt-2">
-                                    <button type="button" onClick={() => setModalOpen(false)} className="btn-ghost flex-1">Cancelar</button>
-                                    <button type="submit" className="btn-primary flex-1">Criar Automação</button>
+                                <div className="flex gap-3 pt-6 border-t border-[var(--border)]">
+                                    <button type="button" onClick={() => setModalOpen(false)} className="btn-ghost flex-1 py-3 text-xs">Cancelar</button>
+                                    <button type="submit" className="btn-primary flex-1 py-3 text-xs flex items-center justify-center gap-2">
+                                        <Zap size={14} /> Salvar Automação
+                                    </button>
                                 </div>
                             </form>
                         </div>

@@ -9,7 +9,13 @@ import { ArrowLeft, Edit3, Clock, Eye, Stethoscope, MessageCircle, FileText, Sha
 
 const STATUS_OPTIONS = ['Novo', 'Em Produção', 'Pronto', 'Entregue', 'Cancelado'];
 const STATUS_ICONS = { 'Novo': Package, 'Em Produção': Clock, 'Pronto': CheckCircle, 'Entregue': Truck, 'Cancelado': AlertTriangle };
-const STATUS_COLORS = { 'Novo': 'text-blue-400 bg-blue-400/15 border-blue-400/25', 'Em Produção': 'text-amber-400 bg-amber-400/12 border-amber-400/20', 'Pronto': 'text-purple-400 bg-purple-400/15 border-purple-400/25', 'Entregue': 'text-emerald-400 bg-emerald-400/15 border-emerald-400/25', 'Cancelado': 'text-red-400 bg-red-400/15 border-red-400/25' };
+const STATUS_COLORS = {
+    'Novo': { text: '#60a5fa', bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.2)' },
+    'Em Produção': { text: '#fbbf24', bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.2)' },
+    'Pronto': { text: '#a78bfa', bg: 'rgba(139, 92, 246, 0.12)', border: 'rgba(139, 92, 246, 0.2)' },
+    'Entregue': { text: '#4ade80', bg: 'rgba(34, 197, 94, 0.1)', border: 'rgba(34, 197, 94, 0.2)' },
+    'Cancelado': { text: '#f87171', bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.2)' }
+};
 
 export default function ClientDetails() {
     const { slug, id } = useParams();
@@ -19,7 +25,6 @@ export default function ClientDetails() {
     const [loading, setLoading] = useState(true);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
-    const [undoTimer, setUndoTimer] = useState(null);
 
     useEffect(() => { loadClient(); }, [id]);
 
@@ -32,10 +37,8 @@ export default function ClientDetails() {
 
     async function handleStatusChange(newStatus) {
         const oldStatus = client.status;
-        // Optimistic update
         setClient(c => ({ ...c, status: newStatus }));
         setUpdatingStatus(true);
-
         const result = await clientService.updateClientStatus(client, newStatus);
         setUpdatingStatus(false);
 
@@ -88,135 +91,169 @@ export default function ClientDetails() {
         addToast({ type: 'success', message: 'Link copiado!' });
     }
 
-    // Alerts
     const daysSinceCreation = client ? Math.floor((Date.now() - new Date(client.created_at)) / 86400000) : 0;
     const pendingPayment = client ? Number(client.total_value || 0) - Number(client.paid_value || 0) : 0;
     const inProductionTooLong = client?.status === 'Em Produção' && daysSinceCreation > 7;
 
     if (loading) return (
         <UnitLayout slug={slug}>
-            <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" /></div>
+            <div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full animate-spin" style={{ border: '2px solid var(--border)', borderTopColor: 'var(--accent)' }} /></div>
         </UnitLayout>
     );
 
     if (!client) return (
-        <UnitLayout slug={slug}><div className="text-center py-16 text-white/30"><p className="text-5xl mb-4">🔍</p><p>Atendimento não encontrado</p></div></UnitLayout>
+        <UnitLayout slug={slug}>
+            <div className="text-center py-24 glass-card max-w-2xl mx-auto">
+                <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+                    <Search size={24} />
+                </div>
+                <p className="text-lg font-bold text-white mb-1">Atendimento não encontrado</p>
+                <button onClick={() => navigate(-1)} className="btn-ghost mt-4">Voltar</button>
+            </div>
+        </UnitLayout>
     );
 
     const currentStatusIdx = STATUS_OPTIONS.indexOf(client.status);
 
     return (
         <UnitLayout slug={slug}>
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-white/30 hover:text-cyan-400 text-sm"><ArrowLeft size={16} /> Voltar</button>
-                <div className="flex items-center gap-2">
-                    <button onClick={openWhatsApp} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-emerald-400 border border-emerald-400/20 rounded-xl hover:bg-emerald-400/10 transition-all"><MessageCircle size={14} /> WhatsApp</button>
-                    <button onClick={generatePDF} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-cyan-400 border border-cyan-400/20 rounded-xl hover:bg-cyan-400/10 transition-all"><FileText size={14} /> PDF</button>
-                    <button onClick={copyPublicLink} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-purple-400 border border-purple-400/20 rounded-xl hover:bg-purple-400/10 transition-all"><Share2 size={14} /> Link</button>
-                    <Link to={`/${slug}/clientes/${id}/editar`} className="flex items-center gap-1.5 btn-primary text-xs px-3 py-2"><Edit3 size={14} /> Editar</Link>
-                    <button onClick={() => setDeleteModal(true)} className="p-2 text-red-400/40 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"><Trash2 size={14} /></button>
+            <div className="max-w-[1440px] mx-auto animate-fadeIn">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+                    <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider transition-colors" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
+                        <ArrowLeft size={16} /> Voltar
+                    </button>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <button onClick={openWhatsApp} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all" style={{ color: '#34d399', background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.2)' }}><MessageCircle size={14} /> WhatsApp</button>
+                        <button onClick={generatePDF} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all" style={{ color: 'var(--info)', background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.2)' }}><FileText size={14} /> PDF</button>
+                        <button onClick={copyPublicLink} className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all" style={{ color: 'var(--purple)', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)' }}><Share2 size={14} /> Link</button>
+                        <Link to={`/${slug}/clientes/${id}/editar`} className="btn-accent flex items-center gap-1.5 px-3.5 py-2 text-xs uppercase tracking-wider"><Edit3 size={14} /> Editar</Link>
+                        <button onClick={() => setDeleteModal(true)} className="p-2 rounded-lg transition-all" style={{ color: 'rgba(239, 68, 68, 0.5)' }} onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }} onMouseLeave={e => { e.currentTarget.style.color = 'rgba(239, 68, 68, 0.5)'; e.currentTarget.style.background = 'transparent'; }}><Trash2 size={16} /></button>
+                    </div>
                 </div>
-            </div>
 
-            {/* Alerts */}
-            {(inProductionTooLong || pendingPayment > 0) && (
-                <div className="flex flex-wrap gap-3 mb-6">
-                    {inProductionTooLong && <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">🔴 Em produção há {daysSinceCreation} dias</div>}
-                    {pendingPayment > 0 && <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">🟡 Pagamento pendente: R$ {pendingPayment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>}
-                    {!inProductionTooLong && pendingPayment <= 0 && <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">🟢 Tudo em dia</div>}
-                </div>
-            )}
+                {/* Alerts */}
+                {(inProductionTooLong || pendingPayment > 0) && (
+                    <div className="flex flex-wrap gap-3 mb-8 stagger-children">
+                        {inProductionTooLong && <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-[11px] font-bold uppercase tracking-wider" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>🔴 Em produção há {daysSinceCreation} dias</div>}
+                        {pendingPayment > 0 && <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-[11px] font-bold uppercase tracking-wider" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>🟡 Faltam R$ {pendingPayment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>}
+                    </div>
+                )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Patient + Status */}
-                    <div className="glass-card glow-border p-6">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400/20 to-purple-500/20 border border-white/[0.06] flex items-center justify-center text-white text-xl font-bold">
-                                {(client.client_name || client.name)?.[0]?.toUpperCase() || '?'}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6 stagger-children">
+                        {/* Patient info */}
+                        <div className="glass-card glow-border p-8">
+                            <div className="flex items-center gap-5 mb-8">
+                                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black" style={{ background: 'var(--accent-gradient)', color: '#0B0B0F', boxShadow: '0 8px 25px var(--accent-glow)' }}>
+                                    {(client.client_name || client.name)?.[0]?.toUpperCase() || '?'}
+                                </div>
+                                <div className="flex-1">
+                                    <h1 className="text-3xl font-bold text-white tracking-tight">{client.client_name || client.name}</h1>
+                                    <div className="flex flex-wrap items-center gap-4 mt-2">
+                                        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{client.phone || 'S/ telefone'}</span>
+                                        {client.doctor_name && <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 px-2.5 py-1 rounded" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}><Stethoscope size={12} /> Dr. {client.doctor_name}</span>}
+                                    </div>
+                                </div>
                             </div>
+
+                            <div className="mb-8">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4" style={{ color: 'var(--accent)' }}>Status do Pedido</h3>
+                                <div className="flex flex-wrap gap-2.5">
+                                    {STATUS_OPTIONS.map((s, i) => {
+                                        const Icon = STATUS_ICONS[s];
+                                        const isActive = client.status === s;
+                                        const isPast = i < currentStatusIdx;
+                                        const st = STATUS_COLORS[s] || STATUS_COLORS['Novo'];
+                                        return (
+                                            <button key={s} onClick={() => handleStatusChange(s)} disabled={updatingStatus}
+                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50`}
+                                                style={isActive ? { background: st.bg, color: st.text, border: `1px solid ${st.border}`, boxShadow: `0 4px 15px ${st.bg}` }
+                                                    : isPast ? { background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)' }
+                                                        : { color: 'rgba(255,255,255,0.2)', border: '1px dashed rgba(255,255,255,0.1)' }}
+                                            >
+                                                {Icon && <Icon size={14} />} {s}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Prescription */}
                             <div>
-                                <h1 className="text-xl font-bold text-white">{client.client_name || client.name}</h1>
-                                <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-xs text-white/30">{client.phone || 'Sem telefone'}</span>
-                                    {client.doctor_name && <span className="text-xs text-white/20 flex items-center gap-1"><Stethoscope size={10} /> {client.doctor_name}</span>}
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}><Eye size={12} /> Prescrição Óptica</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {[{ label: 'OD — Olho Direito', data: [['ESF', client.od_esf], ['CIL', client.od_cil], ['EIXO', client.od_eixo], ['DNP', client.od_dnp], ['ADD', client.od_add]] },
+                                    { label: 'OE — Olho Esquerdo', data: [['ESF', client.oe_esf], ['CIL', client.oe_cil], ['EIXO', client.oe_eixo], ['DNP', client.oe_dnp], ['ADD', client.oe_add]] }
+                                    ].map(eye => (
+                                        <div key={eye.label} className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--accent)' }}>{eye.label}</p>
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {eye.data.map(([l, v]) => (
+                                                    <div key={l} className="text-center">
+                                                        <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{l}</p>
+                                                        <p className="text-sm font-bold text-white">{v || '—'}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="mb-6">
-                            <h3 className="text-xs font-bold text-cyan-400/60 uppercase tracking-widest mb-3">Status do Pedido</h3>
-                            <div className="flex gap-2 flex-wrap">
-                                {STATUS_OPTIONS.map((s, i) => {
-                                    const Icon = STATUS_ICONS[s];
-                                    return (
-                                        <button key={s} onClick={() => handleStatusChange(s)} disabled={updatingStatus}
-                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border disabled:opacity-50 ${client.status === s ? STATUS_COLORS[s] : i <= currentStatusIdx ? 'bg-white/[0.03] text-white/40 border-white/[0.06]' : 'text-white/20 border-white/[0.04] hover:bg-white/[0.04]'}`}>
-                                            <Icon size={12} /> {s}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Prescription */}
-                        <div>
-                            <h3 className="text-xs font-bold text-cyan-400/60 uppercase tracking-widest mb-3 flex items-center gap-1"><Eye size={12} /> Receita</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                {[{ label: 'OD — Direito', data: [['ESF', client.od_esf], ['CIL', client.od_cil], ['EIXO', client.od_eixo], ['DNP', client.od_dnp], ['ADD', client.od_add]] },
-                                { label: 'OE — Esquerdo', data: [['ESF', client.oe_esf], ['CIL', client.oe_cil], ['EIXO', client.oe_eixo], ['DNP', client.oe_dnp], ['ADD', client.oe_add]] }
-                                ].map(eye => (
-                                    <div key={eye.label} className="bg-white/[0.03] border border-white/[0.04] rounded-xl p-4">
-                                        <p className="text-[10px] text-white/25 font-bold uppercase tracking-widest mb-2">{eye.label}</p>
-                                        <div className="grid grid-cols-5 gap-2">
-                                            {eye.data.map(([l, v]) => <div key={l}><p className="text-[9px] text-white/15 uppercase">{l}</p><p className="text-sm font-semibold text-white/70">{v || '—'}</p></div>)}
-                                        </div>
+                    {/* Sidebar */}
+                    <div className="space-y-6 stagger-children" style={{ animationDelay: '100ms' }}>
+                        {/* Order Details */}
+                        <div className="glass-card p-6">
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-5" style={{ color: 'var(--accent)' }}>Detalhes do Pedido</h3>
+                            <div className="space-y-4">
+                                {[['Lente', client.lens_type], ['Material', client.lens_material], ['Armação', [client.frame_brand, client.frame_model].filter(Boolean).join(' ')],
+                                ['Total da Venda', client.total_value ? `R$ ${Number(client.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null],
+                                ['Valor Pago', client.paid_value ? `R$ ${Number(client.paid_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null]
+                                ].map(([l, v]) => (
+                                    <div key={l} className="flex justify-between items-end pb-3 border-b border-white/[0.04] last:border-0 last:pb-0">
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{l}</span>
+                                        <span className="text-sm font-bold text-white text-right max-w-[60%]">{v || '—'}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Sidebar */}
-                <div className="space-y-6">
-                    <div className="glass-card p-6">
-                        <h3 className="text-xs font-bold text-cyan-400/60 uppercase tracking-widest mb-4">Pedido</h3>
-                        <div className="space-y-3">
-                            {[['Lente', client.lens_type], ['Material', client.lens_material], ['Armação', [client.frame_brand, client.frame_model].filter(Boolean).join(' ')], ['Lab', client.lab], ['Valor', client.total_value ? `R$ ${Number(client.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null], ['Pago', client.paid_value ? `R$ ${Number(client.paid_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null]].map(([l, v]) => (
-                                <div key={l} className="flex justify-between py-2 border-b border-white/[0.03] last:border-0"><span className="text-xs text-white/25">{l}</span><span className="text-sm font-semibold text-white/70">{v || '—'}</span></div>
-                            ))}
+                        {/* Timeline */}
+                        <div className="glass-card p-6">
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}><Clock size={12} /> Histórico</h3>
+                            {(client.status_history || []).length === 0 ? <p className="text-xs text-center py-4" style={{ color: 'var(--text-muted)' }}>Sem registros</p> : (
+                                <div className="space-y-5">
+                                    {[...(client.status_history || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((h, i) => {
+                                        const Icon = STATUS_ICONS[h.new_status] || Clock;
+                                        const st = STATUS_COLORS[h.new_status] || { text: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.05)', border: 'transparent' };
+                                        return (
+                                            <div key={i} className="flex items-start gap-4 relative">
+                                                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10" style={{ background: st.bg, color: st.text, border: `1px solid ${st.border}` }}>
+                                                    <Icon size={12} />
+                                                </div>
+                                                {i < (client.status_history?.length || 0) - 1 && <div className="absolute left-[15px] top-8 w-0.5 h-[calc(100%+12px)] bg-white/[0.04]" />}
+                                                <div className="pt-1">
+                                                    <p className="text-xs font-bold text-white uppercase tracking-wider">{h.new_status}</p>
+                                                    {h.note && <p className="text-[11px] mt-1" style={{ color: 'var(--text-secondary)' }}>"{h.note}"</p>}
+                                                    <p className="text-[9px] mt-1.5" style={{ color: 'var(--text-muted)' }}>{new Date(h.created_at).toLocaleString('pt-BR')}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
-                    </div>
 
-                    {/* Timeline */}
-                    <div className="glass-card p-6">
-                        <h3 className="text-xs font-bold text-cyan-400/60 uppercase tracking-widest mb-4 flex items-center gap-1"><Clock size={12} /> Timeline</h3>
-                        {(client.status_history || []).length === 0 ? <p className="text-xs text-white/15 text-center py-4">Sem registros</p> : (
-                            <div className="space-y-4">
-                                {[...(client.status_history || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((h, i) => {
-                                    const Icon = STATUS_ICONS[h.new_status] || Clock;
-                                    return (
-                                        <div key={i} className="flex items-start gap-3 relative">
-                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${STATUS_COLORS[h.new_status] || 'bg-white/5 text-white/30 border-white/10'} border`}>
-                                                <Icon size={12} />
-                                            </div>
-                                            {i < (client.status_history?.length || 0) - 1 && <div className="absolute left-[13px] top-8 w-0.5 h-[calc(100%-2px)] bg-white/[0.04]" />}
-                                            <div>
-                                                <p className="text-xs font-semibold text-white/60">{h.new_status}</p>
-                                                {h.note && <p className="text-[10px] text-white/25 italic">"{h.note}"</p>}
-                                                <p className="text-[10px] text-white/15">{new Date(h.created_at).toLocaleString('pt-BR')}</p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                        {/* Notes */}
+                        {client.notes && (
+                            <div className="glass-card p-6">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] mb-4" style={{ color: 'var(--text-muted)' }}>Observações</h3>
+                                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{client.notes}</p>
                             </div>
                         )}
                     </div>
-
-                    {client.notes && (
-                        <div className="glass-card p-6"><h3 className="text-xs font-bold text-cyan-400/60 uppercase tracking-widest mb-3">Observações</h3><p className="text-sm text-white/40 leading-relaxed">{client.notes}</p></div>
-                    )}
                 </div>
             </div>
 
