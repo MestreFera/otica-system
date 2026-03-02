@@ -36,11 +36,15 @@ export default function UnitLayout({ children, slug }) {
 
     const nav = [
         { to: `/${slug}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
-        { to: `/${slug}/pipeline`, label: 'CRM Pipeline', icon: KanbanSquare },
-        { to: `/${slug}/clientes`, label: 'Clientes', icon: Users },
+        { to: `/${slug}/agente`, label: 'Agente IA', icon: Bot },
+        { to: `/${slug}/whatsapp`, label: 'WhatsApp Oficial', icon: MessageSquare },
+        { to: `/${slug}/pipeline`, label: 'Conversas', icon: MessageCircle },
         { to: `/${slug}/agendamentos`, label: 'Agendamentos', icon: Calendar, badge: todayCount || null },
+        { to: `/${slug}/clientes`, label: 'Follow-ups', icon: Link2 },
+        { to: `/${slug}/pausas`, label: 'Pausas', icon: PauseCircle },
+        { to: `/${slug}/disparos`, label: 'Disparos', icon: Megaphone },
         { to: `/${slug}/financeiro`, label: 'Financeiro', icon: DollarSign },
-        { to: `/${slug}/crm`, label: 'Relatórios (Analytics)', icon: BarChart2 },
+        { to: `/${slug}/crm`, label: 'Relatórios', icon: BarChart2 },
     ];
 
     async function handleLogout() {
@@ -56,11 +60,10 @@ export default function UnitLayout({ children, slug }) {
             <div className="aura-glow"></div>
 
             {/* ── Floating Glass Dock (Sidebar) ── */}
-            <aside className={`fixed inset-y-4 left-4 z-40 w-[240px] flex flex-col rounded-2xl transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[120%]'} lg:translate-x-0 backdrop-blur-2xl border border-white/10 bg-black/60 shadow-2xl overflow-hidden`}>
+            <aside className={`fixed inset-y-4 left-4 z-40 w-[240px] flex flex-col rounded-2xl transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[120%]'} lg:translate-x-0 backdrop-blur-2xl border border-white/10 bg-[#0A0A0A] shadow-2xl overflow-hidden`}>
 
                 {/* Brand */}
-                <div className="flex items-center gap-3 px-5 py-6 border-b border-white/5 relative">
-                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#F97316]/50 to-transparent"></div>
+                <div className="flex items-center gap-3 px-5 py-6 relative shrink-0">
                     <div className="w-8 h-8 rounded-sm bg-[#111] border border-white/10 flex items-center justify-center text-[#F97316]">
                         <Scan size={16} />
                     </div>
@@ -71,23 +74,49 @@ export default function UnitLayout({ children, slug }) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto dark-scroll font-mono">
-                    <p className="text-[9px] font-bold uppercase tracking-widest px-3 mb-4 text-neutral-600">Core Modules</p>
-                    {nav.map(({ to, label, icon: Icon, badge }) => {
+                <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto overflow-x-hidden dark-scroll font-sans pb-24">
+                    {nav.map(({ to, label, icon: Icon, badge }, i) => {
                         const active = isActive(to);
+
+                        // If it's the "Dashboard" item, give it a bit of spacing from the CRM tools
+                        const isFirstItem = i === 0;
+                        const isFinancialOrReports = label === 'Financeiro' || label === 'Relatórios';
+
                         return (
-                            <Link key={to} to={to} onClick={() => setSidebarOpen(false)}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs transition-all duration-300 group ${active ? 'bg-white/5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}>
-                                <Icon size={18} className={`transition-colors duration-300 ${active ? 'text-[#F97316] drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'group-hover:text-neutral-400'}`} />
-                                <span className="flex-1 tracking-wide">{label}</span>
-                                {badge && <span className="text-[9px] min-w-5 h-5 flex items-center justify-center rounded-sm font-bold bg-[#F97316]/20 text-[#F97316] border border-[#F97316]/30">{badge}</span>}
-                            </Link>
+                            <div key={to} className={`
+                                ${isFirstItem ? 'mb-6 pb-4 border-b border-white/5' : ''}
+                                ${isFinancialOrReports && nav[i - 1].label === 'Disparos' ? 'mt-6 pt-4 border-t border-white/5' : ''}
+                            `}>
+                                <Link onClick={() => setSidebarOpen(false)} to={to}
+                                    className={`relative flex items-center gap-4 px-4 py-3.5 rounded-xl text-[13px] font-medium transition-all duration-300 group
+                                      ${active
+                                            ? 'bg-gradient-to-r from-[#F97316]/20 to-transparent text-white border border-[#F97316]/20 shadow-[inset_0_1px_0_0_rgba(249,115,22,0.2)]'
+                                            : 'bg-transparent text-[#9CA3AF] hover:bg-white/[0.03] hover:text-white'
+                                        }`}>
+
+                                    {/* Active border indicator */}
+                                    {active && (
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316] rounded-l-xl shadow-[0_0_10px_#F97316]" />
+                                    )}
+
+                                    <Icon size={18} className={`transition-colors duration-300 ${active ? 'text-[#F97316]' : 'text-[#9CA3AF] group-hover:text-neutral-300'}`} />
+
+                                    <span className="flex-1 tracking-wide">{label}</span>
+
+                                    {badge && (
+                                        <span className={`text-[10px] min-w-5 h-5 flex items-center justify-center rounded-md font-bold ${active ? 'bg-[#F97316] text-black' : 'bg-white/10 text-white'}`}>
+                                            {badge}
+                                        </span>
+                                    )}
+                                </Link>
+                            </div>
                         );
                     })}
                 </nav>
 
                 {/* User profile */}
-                <div className="p-4 border-t border-white/5 bg-black/40">
+                <div className="p-4 border-t border-white/5 bg-black/40 mt-auto shrink-0 relative">
+                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                     <div className="flex items-center gap-3 mb-4 px-1">
                         <div className="w-8 h-8 rounded-sm bg-[#111] border border-white/10 flex items-center justify-center text-xs font-mono font-bold text-[#F97316] flex-shrink-0">
                             {userEmail?.[0]?.toUpperCase() || 'U'}

@@ -103,14 +103,26 @@ export default function App() {
         {/* Unit */}
         <Route path="/:slug/login" element={<UnitLogin />} />
         <Route path="/:slug/dashboard" element={<RequireUnit><UnitDashboard /></RequireUnit>} />
+
+        {/* Core AI & Comms */}
+        <Route path="/:slug/agente" element={<RequireUnit><CRMPage /></RequireUnit>} />
+        <Route path="/:slug/whatsapp" element={<RequireUnit><CRMPage /></RequireUnit>} />
+        <Route path="/:slug/pipeline" element={<RequireUnit><CRMKanban /></RequireUnit>} />
+
+        {/* Operations */}
+        <Route path="/:slug/agendamentos" element={<RequireUnit><AppointmentsPage /></RequireUnit>} />
         <Route path="/:slug/clientes" element={<RequireUnit><ClientsPanel /></RequireUnit>} />
         <Route path="/:slug/clientes/novo" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id/editar" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id" element={<RequireUnit><ClientDetails /></RequireUnit>} />
-        <Route path="/:slug/pipeline" element={<RequireUnit><CRMKanban /></RequireUnit>} />
-        <Route path="/:slug/crm" element={<RequireUnit><CRMPage /></RequireUnit>} />
+
+        {/* Advanced Features */}
+        <Route path="/:slug/pausas" element={<RequireUnit><CRMPage /></RequireUnit>} />
+        <Route path="/:slug/disparos" element={<RequireUnit><CRMPage /></RequireUnit>} />
+
+        {/* Management */}
         <Route path="/:slug/financeiro" element={<RequireUnit><FinancialPage /></RequireUnit>} />
-        <Route path="/:slug/agendamentos" element={<RequireUnit><AppointmentsPage /></RequireUnit>} />
+        <Route path="/:slug/crm" element={<RequireUnit><CRMPage /></RequireUnit>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

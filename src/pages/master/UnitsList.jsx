@@ -12,6 +12,7 @@ const inp = `w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.
 function EditModal({ unit, onClose, onSaved }) {
     const [form, setForm] = useState({
         name: unit.name || '',
+        slug: unit.slug || '',
         city: unit.city || '',
         email: unit.email || '',
         whatsapp: unit.whatsapp || '',
@@ -21,8 +22,8 @@ function EditModal({ unit, onClose, onSaved }) {
     const [error, setError] = useState('');
 
     async function handleSave() {
-        if (!form.name.trim() || !form.city.trim()) {
-            setError('Nome e cidade são obrigatórios.');
+        if (!form.name.trim() || !form.city.trim() || !form.slug.trim()) {
+            setError('Nome, Slug e Cidade são obrigatórios.');
             return;
         }
         setSaving(true);
@@ -52,6 +53,7 @@ function EditModal({ unit, onClose, onSaved }) {
 
                 <div className="space-y-4">
                     {f('name', 'Nome da Ótica', 'text', 'Ex: Ótica Centro')}
+                    {f('slug', 'URL Slug (Acesso)', 'text', 'otica-centro')}
                     {f('city', 'Cidade', 'text', 'São Paulo')}
                     {f('email', 'E-mail', 'email', 'contato@otica.com')}
                     {f('whatsapp', 'WhatsApp', 'text', '(11) 99999-9999')}
