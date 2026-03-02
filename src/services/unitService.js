@@ -122,7 +122,8 @@ export const unitService = {
         if (onStep) onStep('Vinculando perfil...');
         const { error: profileError } = await supabase
             .from('profiles')
-            .insert([{ id: createdAuthUid, role: 'unit', unit_id: createdUnitId }]);
+            .update({ role: 'unit', unit_id: createdUnitId })
+            .eq('id', createdAuthUid);
 
         if (profileError) {
             console.error('ERRO createUnit (profiles):', profileError);
