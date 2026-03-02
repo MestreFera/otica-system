@@ -144,6 +144,45 @@ export const unitService = {
     },
 
 
+    // Edit Unit Password (Master only)
+    async updateUnitPassword(unitId, newPassword) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+
+        // 1. Find the Auth User ID associated with this unit
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('unit_id', unitId)
+            .single();
+
+        if (error || !profile?.id) {
+            console.error('ERRO updateUnitPassword (profile not found):', error);
+            return { success: false, error: 'Perfil de acesso desta unidade não localizado.' };
+        }
+
+        const authUid = profile.id;
+
+        // 2. Use Admin API to update the password
+        const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${authUid}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': serviceKey,
+                'Authorization': `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({ password: newPassword }),
+        });
+
+        if (!authRes.ok) {
+            const errBody = await authRes.text();
+            console.error('ERRO updateUnitPassword (admin/users):', errBody);
+            return { success: false, error: 'Falha ao redefinir a senha via API.' };
+        }
+
+        return { success: true };
+    },
+
     // Toggle active/inactive
     async toggleUnitActive(id, currentActive) {
         const { error } = await supabase

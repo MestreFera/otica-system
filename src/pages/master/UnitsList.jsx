@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { unitService } from '../../services/unitService';
 import { formatCurrency } from '../../utils/helpers';
-import { Plus, LogOut, Power, Eye, Send, Scan, Pencil, Trash2, X, AlertTriangle, TrendingUp, Building2, Zap, Terminal } from 'lucide-react';
+import { Plus, LogOut, Power, Eye, Send, Scan, Pencil, Trash2, X, AlertTriangle, TrendingUp, Building2, Zap, Terminal, Lock } from 'lucide-react';
 
 // ─── Reusable input style ─────────────────────────────────────────────────────
 const inp = `w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all duration-200 text-sm`;
@@ -220,6 +220,77 @@ function DeleteModal({ unit, onClose, onDeleted }) {
     );
 }
 
+// ─── Password Modal ──────────────────────────────────────────────────────────
+function PasswordModal({ unit, onClose }) {
+    const [password, setPassword] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
+
+    async function handleSave() {
+        if (!password || password.length < 6) {
+            setError('A senha deve ter pelo menos 6 caracteres.');
+            return;
+        }
+        setSaving(true);
+        setError('');
+        setSuccessMsg('');
+
+        const { success, error: err } = await unitService.updateUnitPassword(unit.id, password);
+        setSaving(false);
+
+        if (!success) {
+            setError(err || 'Erro ao alterar senha.');
+            return;
+        }
+
+        setSuccessMsg('Senha alterada com sucesso!');
+        setTimeout(onClose, 2000);
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+            <div className="relative border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fadeIn" style={{ background: '#0B0B0F' }}>
+                <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2 text-orange-500">
+                        <Lock size={18} />
+                        <h3 className="text-lg font-bold uppercase tracking-wide">Nova Senha</h3>
+                    </div>
+                    <button onClick={onClose} className="text-white/30 hover:text-orange-500 transition-colors"><X size={18} /></button>
+                </div>
+
+                <div className="mb-4">
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                        Unidade: {unit.name}
+                    </label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="Nova senha (min. 6 char)"
+                        className={inp}
+                    />
+                </div>
+
+                {error && <p className="text-red-400 text-xs mt-3 bg-red-500/10 border border-red-500/20 p-2 rounded-lg">{error}</p>}
+                {successMsg && <p className="text-emerald-400 text-xs mt-3 bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-lg">{successMsg}</p>}
+
+                <div className="flex gap-3 mt-6">
+                    <button onClick={onClose} className="btn-ghost flex-1">Voltar</button>
+                    <button onClick={handleSave} disabled={saving || successMsg} className="btn-canvas flex-1 !py-2">
+                        <span className="corner-accent corner-tl"></span>
+                        <span className="corner-accent corner-tr"></span>
+                        <span className="corner-accent corner-bl"></span>
+                        <span className="corner-accent corner-br"></span>
+                        {saving ? 'Aplicando...' : 'Aplicar'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function UnitsList() {
     const navigate = useNavigate();
@@ -228,6 +299,7 @@ export default function UnitsList() {
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editTarget, setEditTarget] = useState(null);
+    const [passwordTarget, setPasswordTarget] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deployOpen, setDeployOpen] = useState(false);
 
@@ -355,6 +427,11 @@ export default function UnitsList() {
                                             <Send size={18} />
                                         </button>
 
+                                        {/* Reset Password */}
+                                        <button onClick={() => setPasswordTarget(unit)} title="Alterar Senha" className="p-2 border border-[var(--border)] rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                                            <Lock size={18} />
+                                        </button>
+
                                         {/* Edit */}
                                         <button onClick={() => setEditTarget(unit)} title="Editar unidade" className="p-2 border border-[var(--border)] rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; }} onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
                                             <Pencil size={18} />
@@ -403,6 +480,14 @@ export default function UnitsList() {
                         unit={editTarget}
                         onClose={() => setEditTarget(null)}
                         onSaved={updated => setUnits(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u))}
+                    />
+                )}
+
+                {/* Password modal */}
+                {passwordTarget && (
+                    <PasswordModal
+                        unit={passwordTarget}
+                        onClose={() => setPasswordTarget(null)}
                     />
                 )}
 

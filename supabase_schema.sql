@@ -324,8 +324,12 @@ CREATE POLICY "Masters see all units" ON units FOR ALL
     USING (public.get_my_role() = 'master');
 
 DROP POLICY IF EXISTS "Unit users see own unit" ON units;
-CREATE POLICY "Unit users see own unit" ON units FOR SELECT
+CREATE POLICY "Unit users see own unit" ON units FOR ALL
     USING (id = public.get_my_unit_id());
+
+DROP POLICY IF EXISTS "Public check unit existence" ON units;
+CREATE POLICY "Public check unit existence" ON units FOR SELECT
+    USING (true);
 
 -- ── PROFILES ──
 DROP POLICY IF EXISTS "Users see own profile" ON profiles;
