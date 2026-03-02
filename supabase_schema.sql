@@ -79,15 +79,33 @@ CREATE TABLE IF NOT EXISTS clients (
     lens_type       TEXT,
     lens_material   TEXT,
 
-    -- Financial
+    -- Identification (CRM)
+    tso             TEXT,
+    hp              TEXT,
+    laboratorio     TEXT,
+    medico          TEXT,
+    
+    -- Additional Clinical Data
+    prescricao_od   JSONB, -- {esf, cil, eixo}
+    prescricao_oe   JSONB, -- {esf, cil, eixo}
+    adicao          TEXT,
+    tipo_lente      TEXT,
+    material_lente  TEXT,
+    tom_lente       TEXT,
+    info_armacao    TEXT,
+
+    -- Financial / Billing
     total_value     NUMERIC(12,2) DEFAULT 0,
     paid_value      NUMERIC(12,2) DEFAULT 0,
-    payment_method  TEXT,
+    payment_method  TEXT, -- condicao_pagamento
     installments    INT DEFAULT 1,
+    boleto_vencimento DATE,
+    data_pagamento    DATE,
+    data_expedicao    DATE,
 
     -- Status
     status          TEXT NOT NULL DEFAULT 'Novo',
-    notes           TEXT,
+    notes           TEXT, -- observacoes
 
     -- AI / CRM pipeline columns
     status_ia         TEXT,
@@ -114,6 +132,22 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS telefone_cliente TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS ultima_interacao TIMESTAMPTZ;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS ultima_mensagem TEXT;
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS public_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex');
+
+-- Add new CRM/Clinical fields phase 3
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS tso TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS hp TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS laboratorio TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS medico TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS prescricao_od JSONB;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS prescricao_oe JSONB;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS adicao TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS tipo_lente TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS material_lente TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS tom_lente TEXT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS boleto_vencimento DATE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS data_pagamento DATE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS data_expedicao DATE;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS info_armacao TEXT;
 
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_clients_unit_id ON clients(unit_id);

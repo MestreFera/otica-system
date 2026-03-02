@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 
 // Exact list of valid columns in the 'clients' table
 const VALID_COLUMNS = [
-    'name', 'cpf', 'rg', 'birth_date', 'gender',
+    'name', 'client_name', 'cpf', 'rg', 'birth_date', 'gender',
     'phone', 'email', 'address', 'city', 'zip_code',
     'od_esf', 'od_cil', 'od_eixo', 'od_dnp', 'od_add',
     'oe_esf', 'oe_cil', 'oe_eixo', 'oe_dnp', 'oe_add',
@@ -11,7 +11,16 @@ const VALID_COLUMNS = [
     'lens_type', 'lens_material',
     'total_value', 'paid_value', 'payment_method', 'installments',
     'notes', 'unit_id', 'status',
-    'status_ia', 'etapa_fluxo', 'ultima_interacao', 'ultima_mensagem',
+
+    // AI / Follow-up
+    'status_ia', 'etapa_fluxo', 'status_followup', 'encerrado_followup', 'telefone_cliente', 'ultima_interacao', 'ultima_mensagem',
+
+    // CRM Phase 3: Identificação & Receita Additions
+    'tso', 'hp', 'laboratorio', 'medico',
+    'prescricao_od', 'prescricao_oe', 'adicao', 'tipo_lente', 'material_lente', 'tom_lente', 'info_armacao',
+
+    // CRM Phase 3: Pagamento & Cadastro
+    'boleto_vencimento', 'data_pagamento', 'data_expedicao'
 ];
 
 function buildPayload(formData, unitId) {
@@ -37,6 +46,23 @@ function buildPayload(formData, unitId) {
         frame_color: formData.frame_color || null,
         lens_type: formData.lens_type || null, lens_material: formData.lens_material || null,
         status: formData.status || 'Novo', notes: formData.notes || null,
+
+        // Phase 3 CRM Mappings
+        tso: formData.tso || null,
+        hp: formData.hp || null,
+        laboratorio: formData.laboratorio || null,
+        medico: formData.medico || null,
+        prescricao_od: formData.prescricao_od || null,
+        prescricao_oe: formData.prescricao_oe || null,
+        adicao: formData.adicao || null,
+        tipo_lente: formData.tipo_lente || null,
+        material_lente: formData.material_lente || null,
+        tom_lente: formData.tom_lente || null,
+        info_armacao: formData.info_armacao || null,
+
+        boleto_vencimento: formData.boleto_vencimento || null,
+        data_pagamento: formData.data_pagamento || null,
+        data_expedicao: formData.data_expedicao || null
     };
 
     // Strip any key NOT in the valid columns list

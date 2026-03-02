@@ -23,6 +23,7 @@ import FinancialPage from './pages/unit/FinancialPage';
 import AppointmentsPage from './pages/unit/AppointmentsPage';
 import AgentePage from './pages/unit/AgentePage';
 import WhatsAppConfig from './pages/unit/WhatsAppConfig';
+import FollowUps from './pages/unit/FollowUps';
 
 // Public Pages
 import ClientStatusPage from './pages/public/ClientStatusPage';
@@ -117,6 +118,7 @@ export default function App() {
         <Route path="/:slug/clientes/novo" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id/editar" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id" element={<RequireUnit><ClientDetails /></RequireUnit>} />
+        <Route path="/:slug/follow-ups" element={<RequireUnit><FollowUps /></RequireUnit>} />
 
         {/* Advanced Features */}
         <Route path="/:slug/pausas" element={<RequireUnit><CRMPage /></RequireUnit>} />
