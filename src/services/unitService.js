@@ -140,6 +140,16 @@ export const unitService = {
             return { success: false, error: `Unidade e usuário criados, mas falha ao vincular perfil: ${profileError.message}` };
         }
 
+        if (onStep) onStep('Criando tabelas do n8n...');
+        const { error: rpcError } = await supabase.rpc('create_unit_n8n_tables', {
+            p_slug: slug.replace(/-/g, '_')
+        });
+
+        if (rpcError) {
+            console.error('ERRO createUnit (rpc n8n tables):', rpcError);
+            // Non-fatal error for the unit creation itself, but log it
+        }
+
         if (onStep) onStep('Concluído!');
         return { success: true, data: unitData };
     },
