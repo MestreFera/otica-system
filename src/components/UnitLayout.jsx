@@ -37,14 +37,11 @@ export default function UnitLayout({ children, slug }) {
 
     const nav = [
         { to: `/${slug}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
-        { to: `/${slug}/agente`, label: 'Agente IA', icon: Bot },
-        { to: `/${slug}/whatsapp`, label: 'WhatsApp Oficial', icon: MessageSquare },
-        { to: `/${slug}/pipeline`, label: 'Conversas', icon: MessageCircle },
+        { to: `/${slug}/clientes`, label: 'Clientes', icon: Users },
         { to: `/${slug}/agendamentos`, label: 'Agendamentos', icon: Calendar, badge: todayCount || null },
-        { to: `/${slug}/clientes`, label: 'Clientes (Receita)', icon: Users },
-        { to: `/${slug}/follow-ups`, label: 'Central de Mensagens', icon: MessageSquare },
         { to: `/${slug}/financeiro`, label: 'Financeiro', icon: DollarSign },
-        { to: `/${slug}/crm`, label: 'Relatórios', icon: BarChart2 },
+        { to: `/${slug}/agente`, label: 'Agente IA', icon: Bot },
+        { to: `/${slug}/configuracoes`, label: 'Configurações', icon: Settings },
     ];
 
     async function handleLogout() {

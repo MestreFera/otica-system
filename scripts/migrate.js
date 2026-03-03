@@ -345,6 +345,17 @@ async function runMigration() {
     await client.connect();
     console.log("Connected to database. Running migration...");
     await client.query(sql);
+
+    // Call RPC for existing units
+    console.log("Creating isolated n8n tables for existing units...");
+    const { rows } = await client.query('SELECT slug FROM public.units');
+    for (const row of rows) {
+      if (row.slug) {
+        const p_slug = row.slug.replace(/-/g, '_');
+        await client.query(`SELECT public.create_unit_n8n_tables('${p_slug}')`);
+      }
+    }
+
     console.log("Migration completed successfully.");
     process.exit(0);
   } catch (err) {

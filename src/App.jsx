@@ -17,13 +17,10 @@ import UnitDashboard from './pages/unit/UnitDashboard';
 import ClientsPanel from './pages/unit/ClientsPanel';
 import ClientForm from './pages/unit/ClientForm';
 import ClientDetails from './pages/unit/ClientDetails';
-import CRMPage from './pages/unit/CRMPage';
-import CRMKanban from './pages/unit/CRMKanban';
 import FinancialPage from './pages/unit/FinancialPage';
 import AppointmentsPage from './pages/unit/AppointmentsPage';
-import AgentePage from './pages/unit/AgentePage';
-import WhatsAppConfig from './pages/unit/WhatsAppConfig';
-import FollowUps from './pages/unit/FollowUps';
+import UnitSettings from './pages/unit/UnitSettings';
+import AIAgent from './pages/unit/AIAgent';
 
 // Public Pages
 import ClientStatusPage from './pages/public/ClientStatusPage';
@@ -108,9 +105,8 @@ export default function App() {
         <Route path="/:slug/dashboard" element={<RequireUnit><UnitDashboard /></RequireUnit>} />
 
         {/* Core AI & Comms */}
-        <Route path="/:slug/agente" element={<RequireUnit><AgentePage /></RequireUnit>} />
-        <Route path="/:slug/whatsapp" element={<RequireUnit><WhatsAppConfig /></RequireUnit>} />
-        <Route path="/:slug/pipeline" element={<RequireUnit><CRMKanban /></RequireUnit>} />
+        <Route path="/:slug/agente" element={<RequireUnit><AIAgent /></RequireUnit>} />
+        <Route path="/:slug/configuracoes" element={<RequireUnit><UnitSettings /></RequireUnit>} />
 
         {/* Operations */}
         <Route path="/:slug/agendamentos" element={<RequireUnit><AppointmentsPage /></RequireUnit>} />
@@ -118,15 +114,9 @@ export default function App() {
         <Route path="/:slug/clientes/novo" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id/editar" element={<RequireUnit><ClientForm /></RequireUnit>} />
         <Route path="/:slug/clientes/:id" element={<RequireUnit><ClientDetails /></RequireUnit>} />
-        <Route path="/:slug/follow-ups" element={<RequireUnit><FollowUps /></RequireUnit>} />
-
-        {/* Advanced Features */}
-        <Route path="/:slug/pausas" element={<RequireUnit><CRMPage /></RequireUnit>} />
-        <Route path="/:slug/disparos" element={<RequireUnit><CRMPage /></RequireUnit>} />
 
         {/* Management */}
         <Route path="/:slug/financeiro" element={<RequireUnit><FinancialPage /></RequireUnit>} />
-        <Route path="/:slug/crm" element={<RequireUnit><CRMPage /></RequireUnit>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
