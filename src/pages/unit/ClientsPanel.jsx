@@ -40,6 +40,10 @@ export default function ClientsPanel() {
     }, [unitId]);
 
     const filtered = clients.filter(c => {
+        // Hide raw WhatsApp leads (they belong in 'Conversas' until they have an actual order/prescription)
+        const isRawLead = c.status === 'Novo' && c.status_ia != null && !c.total_value && !c.tso && !c.lens_type;
+        if (isRawLead) return false;
+
         const matchSearch = !search || (c.name || c.client_name)?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search);
         const matchStatus = statusFilter === 'Todos' || c.status === statusFilter;
         return matchSearch && matchStatus;
@@ -144,18 +148,20 @@ export default function ClientsPanel() {
                                         </span>
                                     </div>
 
-                                    {/* n8n Automations Prep */}
+                                    {/* Automations Status */}
                                     <div className="mt-auto border-t border-white/5 pt-4">
                                         <div className="flex items-center gap-2 mb-3">
                                             <Activity size={12} className="text-[#F97316]/70" />
                                             <span className="text-[10px] font-mono uppercase tracking-widest text-[#F97316]/70">Automations</span>
                                         </div>
                                         <div className="flex flex-wrap gap-2 mb-4">
-                                            <span className="px-2 py-1 bg-[#111] border border-white/5 rounded-sm text-[9px] font-mono text-neutral-400 uppercase flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Lead Capture: ON
+                                            <span className="px-2 py-1 bg-[#111] border border-white/5 rounded-sm text-[9px] font-mono text-neutral-400 uppercase flex items-center gap-1.5" title="Status da Inteligência Artificial">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${c.status_ia ? 'bg-emerald-500' : 'bg-neutral-600'}`}></span>
+                                                <span className="truncate max-w-[100px]">{c.status_ia ? `IA: ${c.status_ia}` : 'IA: OFF'}</span>
                                             </span>
-                                            <span className="px-2 py-1 bg-[#111] border border-white/5 rounded-sm text-[9px] font-mono text-neutral-400 uppercase flex items-center gap-1.5">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]"></span> Email Seq: RUNNING
+                                            <span className="px-2 py-1 bg-[#111] border border-white/5 rounded-sm text-[9px] font-mono text-neutral-400 uppercase flex items-center gap-1.5" title="Status do Follow-up">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${c.status_followup && !c.encerrado_followup ? 'bg-[#F97316]' : 'bg-neutral-600'}`}></span>
+                                                <span className="truncate max-w-[100px]">{c.status_followup ? `FLWP: ${c.status_followup}` : 'FLWP: OFF'}</span>
                                             </span>
                                         </div>
 
@@ -163,7 +169,7 @@ export default function ClientsPanel() {
                                             <div className="font-mono font-bold text-white text-sm">
                                                 {c.total_value ? `R$ ${Number(c.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
                                             </div>
-                                            <button className="text-[10px] font-mono uppercase text-neutral-500 hover:text-[#F97316] flex items-center gap-1.5 transition-colors" onClick={(e) => { e.stopPropagation(); /* logic here later */ }}>
+                                            <button className="text-[10px] font-mono uppercase text-neutral-500 hover:text-[#F97316] flex items-center gap-1.5 transition-colors" onClick={(e) => { e.stopPropagation(); window.location.href = `/${slug}/agente-ia` }}>
                                                 <LinkIcon size={12} /> Connect Workflow
                                             </button>
                                         </div>

@@ -33,8 +33,8 @@ export default function Conversas() {
 
     const filtered = conversas.filter(c => {
         const search = searchTerm.toLowerCase();
-        return (c.nome_cliente?.toLowerCase() || '').includes(search) ||
-            (c.telefone_cliente || '').includes(search);
+        return ((c.name || c.nome_cliente)?.toLowerCase() || '').includes(search) ||
+            (c.phone || c.telefone_cliente || '').includes(search);
     });
 
     const getStatusStyles = (status) => {
@@ -149,13 +149,13 @@ export default function Conversas() {
                                 >
                                     {/* Avatar */}
                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B2B] to-[#FF8B5B] flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-lg shadow-[#FF6B2B]/20">
-                                        {getInitial(c.nome_cliente)}
+                                        {getInitial(c.name || c.nome_cliente)}
                                     </div>
 
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2 mb-1">
-                                            <h3 className="text-sm font-bold text-white truncate">{c.nome_cliente || 'Sem Nome'}</h3>
+                                            <h3 className="text-sm font-bold text-white truncate">{c.name || c.nome_cliente || 'Sem Nome'}</h3>
                                             <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-500 shrink-0">
                                                 <Clock size={12} />
                                                 <span>{formatTimeAgo(c.ultima_interacao)}</span>
@@ -183,10 +183,10 @@ export default function Conversas() {
                         <div className="flex items-start justify-between mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#FF6B2B] to-[#FF8B5B] flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-[#FF6B2B]/20">
-                                    {getInitial(selectedLead.nome_cliente)}
+                                    {getInitial(selectedLead.name || selectedLead.nome_cliente)}
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white leading-tight">{selectedLead.nome_cliente}</h2>
+                                    <h2 className="text-lg font-bold text-white leading-tight">{selectedLead.name || selectedLead.nome_cliente}</h2>
                                     <p className="text-sm text-neutral-400 font-mono mt-0.5">{selectedLead.telefone_cliente}</p>
                                 </div>
                             </div>

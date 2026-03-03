@@ -110,8 +110,8 @@ export default function FollowUp() {
                             <div key={lead.id} className="bg-[#111118] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
 
                                 <div className="flex-1 min-w-0 w-full">
-                                    <h3 className="text-lg font-bold text-white mb-1">{lead.nome_cliente || 'Sem Nome'}</h3>
-                                    <p className="text-sm text-neutral-400 font-mono mb-3">{lead.telefone_cliente}</p>
+                                    <h3 className="text-lg font-bold text-white mb-1">{lead.name || lead.nome_cliente || 'Sem Nome'}</h3>
+                                    <p className="text-sm text-neutral-400 font-mono mb-3">{lead.phone || lead.telefone_cliente}</p>
 
                                     {/* Progress Bar Line */}
                                     <div className="flex items-center gap-3">
