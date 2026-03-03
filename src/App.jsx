@@ -21,6 +21,8 @@ import FinancialPage from './pages/unit/FinancialPage';
 import AppointmentsPage from './pages/unit/AppointmentsPage';
 import UnitSettings from './pages/unit/UnitSettings';
 import AIAgent from './pages/unit/AIAgent';
+import Conversas from './pages/unit/Conversas';
+import FollowUp from './pages/unit/FollowUp';
 
 // Public Pages
 import ClientStatusPage from './pages/public/ClientStatusPage';
@@ -105,7 +107,9 @@ export default function App() {
         <Route path="/:slug/dashboard" element={<RequireUnit><UnitDashboard /></RequireUnit>} />
 
         {/* Core AI & Comms */}
-        <Route path="/:slug/agente" element={<RequireUnit><AIAgent /></RequireUnit>} />
+        <Route path="/:slug/agente-ia" element={<RequireUnit><AIAgent /></RequireUnit>} />
+        <Route path="/:slug/conversas" element={<RequireUnit><Conversas /></RequireUnit>} />
+        <Route path="/:slug/followup" element={<RequireUnit><FollowUp /></RequireUnit>} />
         <Route path="/:slug/configuracoes" element={<RequireUnit><UnitSettings /></RequireUnit>} />
 
         {/* Operations */}

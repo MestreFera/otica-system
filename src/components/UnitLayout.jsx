@@ -1,12 +1,13 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { unitService } from '../services/unitService';
-import { appointmentService } from '../services/appointmentService';
+import { unitTablesService } from '../services/unitTablesService';
 import {
     LayoutDashboard, Users, LogOut, Menu, X, Bell, ChevronRight,
     Scan, DollarSign, Calendar, Search, Settings, Package,
     FileText, BarChart2, ShoppingBag, KanbanSquare,
-    Bot, MessageSquare, MessageCircle, Link2, PauseCircle, Megaphone
+    Bot, MessageSquare, MessageCircle, Link2, PauseCircle, Megaphone,
+    RefreshCw
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -16,31 +17,33 @@ export default function UnitLayout({ children, slug }) {
     const { logout, profile, user } = useAuthStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
-    const [todayCount, setTodayCount] = useState(0);
+    const [counts, setCounts] = useState({ atendimentoHumano: 0, followUpEnviado: 0, agendamentosHoje: 0 });
 
     const unitName = profile?.units?.name || slug;
     const userEmail = user?.email || '';
     const initials = unitName?.slice(0, 2).toUpperCase() || 'OS';
 
     useEffect(() => {
-        if (!profile?.unit_id) return;
+        if (!slug) return;
         async function load() {
-            const [notifs, count] = await Promise.all([
-                unitService.getNotifications(profile.unit_id),
-                appointmentService.getTodayCount(profile.unit_id),
-            ]);
-            setNotifications(notifs.filter(n => !n.read));
-            setTodayCount(count);
+            if (profile?.unit_id) {
+                const notifs = await unitService.getNotifications(profile.unit_id);
+                setNotifications(notifs.filter(n => !n.read));
+            }
+            const c = await unitTablesService.getSidebarCounts(slug);
+            setCounts(c);
         }
         load();
-    }, [profile?.unit_id]);
+    }, [slug, profile?.unit_id]);
 
     const nav = [
         { to: `/${slug}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
+        { to: `/${slug}/conversas`, label: 'Conversas', icon: MessageCircle, badge: counts.atendimentoHumano || null },
+        { to: `/${slug}/followup`, label: 'Follow-up', icon: RefreshCw, badge: counts.followUpEnviado || null },
+        { to: `/${slug}/agendamentos`, label: 'Agendamentos', icon: Calendar, badge: counts.agendamentosHoje || null },
         { to: `/${slug}/clientes`, label: 'Clientes', icon: Users },
-        { to: `/${slug}/agendamentos`, label: 'Agendamentos', icon: Calendar, badge: todayCount || null },
         { to: `/${slug}/financeiro`, label: 'Financeiro', icon: DollarSign },
-        { to: `/${slug}/agente`, label: 'Agente IA', icon: Bot },
+        { to: `/${slug}/agente-ia`, label: 'Agente IA', icon: Bot },
         { to: `/${slug}/configuracoes`, label: 'Configurações', icon: Settings },
     ];
 
