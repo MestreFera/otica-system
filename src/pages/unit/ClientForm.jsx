@@ -23,6 +23,8 @@ const EMPTY_FORM = {
     // 2. Prescrição Principal
     od_esf: '', od_cil: '', od_eixo: '',
     oe_esf: '', oe_cil: '', oe_eixo: '',
+    bib_od_esf: '', bib_od_cil: '', bib_od_eixo: '',
+    bib_oe_esf: '', bib_oe_cil: '', bib_oe_eixo: '',
     adicao: '', tipo_lente: '', material_lente: '', tom_lente: '',
     // 3. Dados Pessoais
     cpf: '', phone: '', email: '', birth_date: '', boleto_vencimento: '', city: '', address: '',
@@ -99,6 +101,10 @@ export default function ClientForm() {
         setLoading(true);
         clientService.getClientById(id).then(data => {
             if (data) {
+                let bibOd = {}; let bibOe = {};
+                try { if (data.prescricao_od) bibOd = JSON.parse(data.prescricao_od); } catch (e) { }
+                try { if (data.prescricao_oe) bibOe = JSON.parse(data.prescricao_oe); } catch (e) { }
+
                 setForm({
                     ...EMPTY_FORM, // Garante que campos novos não quebrem
                     tso: data.tso || '',
@@ -110,6 +116,9 @@ export default function ClientForm() {
 
                     od_esf: data.od_esf ?? '', od_cil: data.od_cil ?? '', od_eixo: data.od_eixo ?? '',
                     oe_esf: data.oe_esf ?? '', oe_cil: data.oe_cil ?? '', oe_eixo: data.oe_eixo ?? '',
+
+                    bib_od_esf: bibOd.bib_esf || '', bib_od_cil: bibOd.bib_cil || '', bib_od_eixo: bibOd.bib_eixo || '',
+                    bib_oe_esf: bibOe.bib_esf || '', bib_oe_cil: bibOe.bib_cil || '', bib_oe_eixo: bibOe.bib_eixo || '',
 
                     adicao: data.adicao || '', tipo_lente: data.tipo_lente || '', material_lente: data.material_lente || '', tom_lente: data.tom_lente || '',
 
@@ -256,7 +265,36 @@ export default function ClientForm() {
                                 </div>
                             </div>
 
-                            {/* Biblioteca Table removed to match requirements */}
+                            {/* Biblioteca Table */}
+                            <div>
+                                <h4 className="text-sm font-bold text-white mb-4 mt-8">Prescrição Biblioteca</h4>
+                                <div className="rounded-xl border border-white/10 overflow-hidden bg-[#0A0A0A]">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-neutral-400 bg-white/5 uppercase border-b border-white/10">
+                                            <tr>
+                                                <th className="px-5 py-3 font-semibold border-r border-white/10">Olho</th>
+                                                <th className="px-5 py-3 font-semibold border-r border-white/10">ESF</th>
+                                                <th className="px-5 py-3 font-semibold border-r border-white/10">CIL</th>
+                                                <th className="px-5 py-3 font-semibold">EIXO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            <tr>
+                                                <td className="px-5 py-3 font-bold text-white border-r border-white/10 w-24">OD</td>
+                                                <td className="p-0 border-r border-white/10"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-white placeholder-white/20 focus:bg-white/5" placeholder="ESF" value={form.bib_od_esf} onChange={upd('bib_od_esf')} /></td>
+                                                <td className="p-0 border-r border-white/10"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-white placeholder-white/20 focus:bg-white/5" placeholder="CIL" value={form.bib_od_cil} onChange={upd('bib_od_cil')} /></td>
+                                                <td className="p-0"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-white placeholder-white/20 focus:bg-white/5" placeholder="EIXO" value={form.bib_od_eixo} onChange={upd('bib_od_eixo')} /></td>
+                                            </tr>
+                                            <tr>
+                                                <td className="px-5 py-3 font-bold text-white border-r border-white/10 w-24">OE</td>
+                                                <td className="p-0 border-r border-white/10"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-white placeholder-white/20 focus:bg-white/5" placeholder="ESF" value={form.bib_oe_esf} onChange={upd('bib_oe_esf')} /></td>
+                                                <td className="p-0 border-r border-white/10"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-white placeholder-white/20 focus:bg-white/5" placeholder="CIL" value={form.bib_oe_cil} onChange={upd('bib_oe_cil')} /></td>
+                                                <td className="p-0"><input type="text" className="w-full bg-transparent px-5 py-3 outline-none text-white placeholder-white/20 focus:bg-white/5" placeholder="EIXO" value={form.bib_oe_eixo} onChange={upd('bib_oe_eixo')} /></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
 
                         </div>
 
