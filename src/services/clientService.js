@@ -164,4 +164,82 @@ export const clientService = {
             delivered: clients.filter(c => c.status === 'Entregue').length,
         };
     },
+
+    async bulkImportClients(unitId, parsedDataArray) {
+        // Parse CSV objects to our Schema format
+        const validStatuses = ['Novo', 'Em Produção', 'Pronto', 'Entregue', 'Cancelado'];
+
+        const toInsert = parsedDataArray.map(row => {
+            const rawStatus = row.status || row.Status || row.STATUS || '';
+            const status = validStatuses.includes(rawStatus) ? rawStatus : 'Novo';
+
+            return {
+                unit_id: unitId,
+                status: status,
+                tso: row.tso || null,
+                name: row.nome_completo || row.name || row.nome || '',
+                phone: row.telefone || row.phone || null,
+                cpf: row.cpf || null,
+                email: row.email || null,
+                laboratorio: row.laboratorio || null,
+                medico: row.medico || null,
+                hp: row.hp || null,
+
+                od_esf: row.od_esf ? Number(row.od_esf.replace(',', '.')) : null,
+                od_cil: row.od_cil ? Number(row.od_cil.replace(',', '.')) : null,
+                od_eixo: row.od_eixo ? Number(row.od_eixo) : null,
+                oe_esf: row.oe_esf ? Number(row.oe_esf.replace(',', '.')) : null,
+                oe_cil: row.oe_cil ? Number(row.oe_cil.replace(',', '.')) : null,
+                oe_eixo: row.oe_eixo ? Number(row.oe_eixo) : null,
+
+                prescricao_od: JSON.stringify({
+                    bib_esf: row.od_esf_2 || '',
+                    bib_cil: row.od_cil_2 || '',
+                    bib_eixo: row.od_eixo_2 || ''
+                }),
+                prescricao_oe: JSON.stringify({
+                    bib_esf: row.oe_esf_2 || '',
+                    bib_cil: row.oe_cil_2 || '',
+                    bib_eixo: row.oe_eixo_2 || ''
+                }),
+
+                adicao: row.adicao || null,
+                tipo_lente: row.tipo_lente || row.lens_type || null,
+                material_lente: row.material_lente || row.lens_material || null,
+                tom_lente: row.tom_lente || null,
+                info_armacao: row.informacoes_armacao || row.info_armacao || null,
+                notes: row.observacoes || row.notes || null,
+
+                birth_date: row.data_nascimento || null,
+                city: row.cidade || null,
+                address: row.endereco || null,
+                payment_method: row.condicoes_pagamento || null,
+                total_value: row.valor_total ? Number(String(row.valor_total).replace(',', '.')) : null,
+                boleto_vencimento: row.boleto || row.boleto_vencimento || null,
+                data_expedicao: row.data_expedicao || null,
+
+                // Dates from CSV (if any)
+                created_at: row.created_at || new Date().toISOString()
+            };
+        }).filter(c => c.name.trim() !== ''); // Skip empty rows
+
+        if (toInsert.length === 0) return { success: false, error: 'Nenhum dado válido encontrado' };
+
+        // Supabase has a limit per insert, so we chunk it just in case if there's thousands
+        const chunkSize = 1000;
+        let totalInserted = 0;
+
+        try {
+            for (let i = 0; i < toInsert.length; i += chunkSize) {
+                const chunk = toInsert.slice(i, i + chunkSize);
+                const { error } = await supabase.from('clients').insert(chunk);
+                if (error) throw error;
+                totalInserted += chunk.length;
+            }
+            return { success: true, count: totalInserted };
+        } catch (error) {
+            console.error('bulkImportClients:', error);
+            return { success: false, error: error.message };
+        }
+    }
 };
