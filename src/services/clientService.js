@@ -23,6 +23,28 @@ const VALID_COLUMNS = [
     'boleto_vencimento', 'data_pagamento', 'data_expedicao'
 ];
 
+function formatDatePG(val) {
+    if (!val || typeof val !== 'string') return val || null;
+    let s = val.trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s; // already YYYY-MM-DD or ISO
+    if (s.includes('T') && s.includes('Z')) return s; // already ISO string
+
+    // Check Brazilian format DD/MM/YY or DD/MM/YYYY
+    const parts = s.split('/');
+    if (parts.length === 3) {
+        let d = parts[0].padStart(2, '0');
+        let m = parts[1].padStart(2, '0');
+        let y = parts[2].split(' ')[0]; // safely ignore time if "DD/MM/YYYY HH:mm"
+
+        if (y.length === 2) {
+            const yNum = parseInt(y, 10);
+            y = (yNum > 50 ? '19' : '20') + y;
+        }
+        return `${y}-${m}-${d}`;
+    }
+    return s;
+}
+
 function buildPayload(formData, unitId) {
     const num = v => (v === '' || v === undefined || v === null) ? null : Number(v);
 
@@ -30,12 +52,12 @@ function buildPayload(formData, unitId) {
         unit_id: unitId,
         name: formData.name || formData.client_name || '',
         cpf: formData.cpf || null, rg: formData.rg || null,
-        birth_date: formData.birth_date || null, gender: formData.gender || null,
+        birth_date: formatDatePG(formData.birth_date), gender: formData.gender || null,
         od_esf: num(formData.od_esf), od_cil: num(formData.od_cil), od_eixo: num(formData.od_eixo),
         od_dnp: num(formData.od_dnp), od_add: num(formData.od_add),
         oe_esf: num(formData.oe_esf), oe_cil: num(formData.oe_cil), oe_eixo: num(formData.oe_eixo),
         oe_dnp: num(formData.oe_dnp), oe_add: num(formData.oe_add),
-        doctor_name: formData.doctor_name || null, exam_date: formData.exam_date || null,
+        doctor_name: formData.doctor_name || null, exam_date: formatDatePG(formData.exam_date),
         phone: formData.phone || null, email: formData.email || null,
         address: formData.address || null, city: formData.city || null,
         zip_code: formData.zip_code || null,
@@ -68,9 +90,9 @@ function buildPayload(formData, unitId) {
         tom_lente: formData.tom_lente || null,
         info_armacao: formData.info_armacao || null,
 
-        boleto_vencimento: formData.boleto_vencimento || null,
-        data_pagamento: formData.data_pagamento || null,
-        data_expedicao: formData.data_expedicao || null
+        boleto_vencimento: formatDatePG(formData.boleto_vencimento),
+        data_pagamento: formatDatePG(formData.data_pagamento),
+        data_expedicao: formatDatePG(formData.data_expedicao)
     };
 
     // Strip any key NOT in the valid columns list
@@ -210,16 +232,16 @@ export const clientService = {
                 info_armacao: row.informacoes_armacao || row.info_armacao || null,
                 notes: row.observacoes || row.notes || null,
 
-                birth_date: row.data_nascimento || null,
+                birth_date: formatDatePG(row.data_nascimento),
                 city: row.cidade || null,
                 address: row.endereco || null,
                 payment_method: row.condicoes_pagamento || null,
                 total_value: row.valor_total ? Number(String(row.valor_total).replace(',', '.')) : null,
-                boleto_vencimento: row.boleto || row.boleto_vencimento || null,
-                data_expedicao: row.data_expedicao || null,
+                boleto_vencimento: formatDatePG(row.boleto || row.boleto_vencimento),
+                data_expedicao: formatDatePG(row.data_expedicao),
 
                 // Dates from CSV (if any)
-                created_at: row.created_at || new Date().toISOString()
+                created_at: row.created_at ? (formatDatePG(row.created_at).includes('T') ? row.created_at : `${formatDatePG(row.created_at)}T12:00:00Z`) : new Date().toISOString()
             };
         }).filter(c => c.name.trim() !== ''); // Skip empty rows
 

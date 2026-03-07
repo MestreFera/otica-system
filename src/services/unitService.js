@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export const unitService = {
     // Master listing — fetch units directly, then aggregate client data
@@ -71,12 +72,18 @@ export const unitService = {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
 
+        // Create a service-role client for admin operations
+        // The regular anon/authenticated client doesn't have enough permissions
+        const adminSupabase = createClient(supabaseUrl, serviceKey, {
+            auth: { persistSession: false, autoRefreshToken: false }
+        });
+
         let createdUnitId = null;
         let createdAuthUid = null;
 
         // ── Step 1: Insert unit row ───────────────────────────────────────────
         if (onStep) onStep('Criando unidade...');
-        const { data: unitData, error: unitError } = await supabase
+        const { data: unitData, error: unitError } = await adminSupabase
             .from('units')
             .insert([{ name, slug, email, city, state, active }])
             .select()
@@ -105,7 +112,7 @@ export const unitService = {
             console.error('ERRO createUnit (admin/users):', errBody);
 
             // Rollback: delete unit
-            await supabase.from('units').delete().eq('id', createdUnitId);
+            await adminSupabase.from('units').delete().eq('id', createdUnitId);
             return { success: false, error: `Falha ao criar usuário de acesso: ${errBody}` };
         }
 
@@ -114,13 +121,13 @@ export const unitService = {
 
         if (!createdAuthUid) {
             // Unexpected: no user id returned
-            await supabase.from('units').delete().eq('id', createdUnitId);
+            await adminSupabase.from('units').delete().eq('id', createdUnitId);
             return { success: false, error: 'Usuário criado mas sem ID retornado pela API.' };
         }
 
         // ── Step 3: Insert profile linking user → unit ────────────────────────
         if (onStep) onStep('Vinculando perfil...');
-        const { error: profileError } = await supabase
+        const { error: profileError } = await adminSupabase
             .from('profiles')
             .update({ role: 'unit', unit_id: createdUnitId })
             .eq('id', createdAuthUid);
@@ -136,12 +143,12 @@ export const unitService = {
                     'Authorization': `Bearer ${serviceKey}`,
                 },
             });
-            await supabase.from('units').delete().eq('id', createdUnitId);
+            await adminSupabase.from('units').delete().eq('id', createdUnitId);
             return { success: false, error: `Unidade e usuário criados, mas falha ao vincular perfil: ${profileError.message}` };
         }
 
         if (onStep) onStep('Criando tabelas do n8n...');
-        const { error: rpcError } = await supabase.rpc('create_unit_n8n_tables', {
+        const { error: rpcError } = await adminSupabase.rpc('create_unit_n8n_tables', {
             p_slug: slug.replace(/-/g, '_')
         });
 
