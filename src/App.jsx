@@ -26,6 +26,7 @@ import FollowUp from './pages/unit/FollowUp';
 
 // Public Pages
 import ClientStatusPage from './pages/public/ClientStatusPage';
+import IAMonitor from './pages/public/IAMonitor';
 
 function RequireMaster({ children }) {
   const { profile, loading } = useAuthStore();
@@ -94,6 +95,7 @@ export default function App() {
 
         {/* Public */}
         <Route path="/status/:token" element={<ClientStatusPage />} />
+        <Route path="/monitor/:slug" element={<IAMonitor />} />
 
         {/* Master */}
         <Route path="/master/login" element={<MasterLogin />} />

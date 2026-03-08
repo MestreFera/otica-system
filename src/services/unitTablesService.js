@@ -252,5 +252,44 @@ export const unitTablesService = {
         }
 
         return counts;
+    },
+
+    // ------------------------------------------------------------------------
+    // MONITOR DASHBOARD (Public AI Monitor)
+    // ------------------------------------------------------------------------
+
+    async getMonitorFollowups(slug) {
+        const tableName = `followup_${tableSlug(slug)}`;
+        try {
+            const { data, error } = await supabase.from(tableName).select('*');
+            if (error) {
+                if (error.code === '42P01') return []; // table doesn't exist
+                throw error;
+            }
+            return data || [];
+        } catch (error) {
+            console.error(`Erro ao buscar followups monitor (${tableName}):`, error);
+            return [];
+        }
+    },
+
+    async getMonitorAgendamentosHoje(slug) {
+        const tableName = `agendamento_${tableSlug(slug)}`;
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            const { data, error } = await supabase
+                .from(tableName)
+                .select('*')
+                .gte('data_agendamento', today)
+                .lte('data_agendamento', today + 'T23:59:59');
+            if (error) {
+                if (error.code === '42P01') return [];
+                throw error;
+            }
+            return data || [];
+        } catch (error) {
+            console.error(`Erro ao buscar agendamentos monitor (${tableName}):`, error);
+            return [];
+        }
     }
 };
