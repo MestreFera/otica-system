@@ -334,6 +334,84 @@ alter table public.units add column if not exists ai_name text default 'IA';
 -- ═══ AUTOMATIONS EXTRA COLUMNS ═══
 alter table public.automations add column if not exists delay_minutes integer default 0;
 
+-- ═══ DADOS_CLIENTE (Pré-cadastro via IA) ═══
+CREATE TABLE IF NOT EXISTS public.dados_cliente (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  unit_id UUID NOT NULL REFERENCES public.units(id) ON DELETE CASCADE,
+  nome TEXT,
+  telefone TEXT,
+  email TEXT,
+  origem TEXT DEFAULT 'luna_ia',
+  status TEXT DEFAULT 'pre_cadastro',
+  criado_em TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(unit_id, telefone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dados_cliente_telefone ON public.dados_cliente(telefone);
+CREATE INDEX IF NOT EXISTS idx_dados_cliente_unit ON public.dados_cliente(unit_id);
+
+ALTER TABLE public.dados_cliente ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "dados_cliente_select" ON public.dados_cliente;
+DROP POLICY IF EXISTS "dados_cliente_insert" ON public.dados_cliente;
+DROP POLICY IF EXISTS "dados_cliente_update" ON public.dados_cliente;
+DROP POLICY IF EXISTS "dados_cliente_delete" ON public.dados_cliente;
+
+CREATE POLICY "dados_cliente_select" ON public.dados_cliente
+  FOR SELECT USING (public.my_role()='master' OR unit_id=public.my_unit_id());
+CREATE POLICY "dados_cliente_insert" ON public.dados_cliente
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "dados_cliente_update" ON public.dados_cliente
+  FOR UPDATE USING (public.my_role()='master' OR unit_id=public.my_unit_id());
+CREATE POLICY "dados_cliente_delete" ON public.dados_cliente
+  FOR DELETE USING (public.my_role()='master' OR unit_id=public.my_unit_id());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.dados_cliente TO authenticated;
+GRANT SELECT, INSERT ON public.dados_cliente TO anon;
+
+-- Trigger: Sync dados_cliente → clients
+CREATE OR REPLACE FUNCTION public.sync_dados_cliente_to_clients()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.clients
+      WHERE unit_id = NEW.unit_id AND telefone_cliente = NEW.telefone
+    ) THEN
+      INSERT INTO public.clients (
+        unit_id, name, telefone_cliente, email, status, notes, created_at, updated_at
+      ) VALUES (
+        NEW.unit_id,
+        COALESCE(NEW.nome, 'Sem Nome'),
+        NEW.telefone,
+        NEW.email,
+        'Novo',
+        'Origem: ' || COALESCE(NEW.origem, 'luna_ia'),
+        NOW(),
+        NOW()
+      );
+    END IF;
+
+  ELSIF TG_OP = 'UPDATE' THEN
+    UPDATE public.clients
+    SET name = COALESCE(NEW.nome, name),
+        email = COALESCE(NEW.email, email),
+        updated_at = NOW()
+    WHERE unit_id = NEW.unit_id AND telefone_cliente = NEW.telefone;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS sync_dados_cliente_trigger ON public.dados_cliente;
+CREATE TRIGGER sync_dados_cliente_trigger
+  AFTER INSERT OR UPDATE ON public.dados_cliente
+  FOR EACH ROW EXECUTE FUNCTION public.sync_dados_cliente_to_clients();
+
 -- ═══ FIX EMAIL CONFIRMATION ═══
 -- Confirms any users whose emails are still unverified so they can log in.
 update auth.users
