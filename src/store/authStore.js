@@ -122,6 +122,28 @@ const useAuthStore = create((set, get) => ({
         await supabase.auth.signOut();
         set({ session: null, user: null, profile: null });
     },
+
+    sendPasswordReset: async (email) => {
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: 'Erro inesperado: ' + err.message };
+        }
+    },
+
+    updatePassword: async (newPassword) => {
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) return { success: false, error: error.message };
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: 'Erro inesperado: ' + err.message };
+        }
+    },
 }));
 
 export default useAuthStore;

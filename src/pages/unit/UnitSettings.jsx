@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import UnitLayout from '../../components/UnitLayout';
 import { useParams } from 'react-router-dom';
-import { Bot, Save, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Bot, Save, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, Eye, Loader2, Shield } from 'lucide-react';
 import { unitService } from '../../services/unitService';
 import { aiAgentService } from '../../services/aiAgentService';
+import useAuthStore from '../../store/authStore';
 
 const inp = `w-full bg-[#0A0A0A] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all duration-200 text-sm`;
 const labelClass = `block text-[10px] font-bold uppercase tracking-[0.1em] mb-1.5 text-neutral-500`;
@@ -40,6 +41,11 @@ export default function AgentePage() {
     const [unitId, setUnitId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    
+    // Auth
+    const { updatePassword } = useAuthStore();
+    const [senhaData, setSenhaData] = useState({ novaSenha: '', confirmarSenha: '' });
+    const [mudandoSenha, setMudandoSenha] = useState(false);
 
     // Identidade do Agente
     const [identidade, setIdentidade] = useState({
@@ -198,6 +204,34 @@ export default function AgentePage() {
             alert('Configurações salvas com sucesso!');
         } else {
             alert('Erro ao salvar configurações: ' + res.error);
+        }
+    }
+
+    async function handleUpdatePassword() {
+        if (!senhaData.novaSenha) {
+            alert('Digite a nova senha.');
+            return;
+        }
+        if (senhaData.novaSenha !== senhaData.confirmarSenha) {
+            alert('As senhas não coincidem.');
+            return;
+        }
+
+        const strongPasswordRegex = /^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;
+        if (!strongPasswordRegex.test(senhaData.novaSenha)) {
+            alert('Senha deve conter no mínimo 8 caracteres, 1 maiúscula, 1 número e 1 caractere especial (@$!%*?&).');
+            return;
+        }
+
+        setMudandoSenha(true);
+        const res = await updatePassword(senhaData.novaSenha);
+        setMudandoSenha(false);
+
+        if (res.success) {
+            alert('Senha atualizada com sucesso!');
+            setSenhaData({ novaSenha: '', confirmarSenha: '' });
+        } else {
+            alert('Erro ao atualizar senha: ' + res.error);
         }
     }
 
@@ -450,6 +484,28 @@ export default function AgentePage() {
                             <label className={labelClass}>Texto de Apresentação de Preço</label>
                             <textarea className={`${inp} resize-none h-24`} value={precos.texto} onChange={e => setPrecos({ ...precos, texto: e.target.value })} />
                         </div>
+                    </Accordion>
+
+                    {/* 7. Segurança */}
+                    <Accordion title="Segurança da Conta" icon={Shield} defaultOpen={false}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            <div>
+                                <label className={labelClass}>Nova Senha</label>
+                                <input type="password" placeholder="••••••••" className={inp} value={senhaData.novaSenha} onChange={e => setSenhaData({ ...senhaData, novaSenha: e.target.value })} />
+                                <p className="text-[10px] text-neutral-500 mt-1">Mínimo 8 caracteres, 1 maiúscula, 1 número, 1 caractere especial.</p>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Confirmar Nova Senha</label>
+                                <input type="password" placeholder="••••••••" className={inp} value={senhaData.confirmarSenha} onChange={e => setSenhaData({ ...senhaData, confirmarSenha: e.target.value })} />
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleUpdatePassword}
+                            disabled={mudandoSenha}
+                            className="btn-primary"
+                            style={{ background: '#F97316', borderColor: '#F97316' }}>
+                            {mudandoSenha ? 'Atualizando...' : 'Atualizar Senha'}
+                        </button>
                     </Accordion>
 
                 </div>

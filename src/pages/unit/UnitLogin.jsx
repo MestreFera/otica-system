@@ -79,7 +79,7 @@ export default function UnitLogin() {
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <label className="block text-xs font-mono uppercase tracking-widest text-neutral-500">Password</label>
-                                    <a href="#" className="text-[10px] font-mono text-neutral-500 hover:text-[#F97316] transition-colors">Forgot Password?</a>
+                                    <button type="button" onClick={() => navigate('/forgot-password')} className="text-[10px] font-mono text-neutral-500 hover:text-[#F97316] transition-colors">Forgot Password?</button>
                                 </div>
                                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="input-canvas" required />
                             </div>

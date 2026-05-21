@@ -28,6 +28,10 @@ import FollowUp from './pages/unit/FollowUp';
 import ClientStatusPage from './pages/public/ClientStatusPage';
 import IAMonitor from './pages/public/IAMonitor';
 
+// Shared Pages
+import ForgotPassword from './pages/shared/ForgotPassword';
+import ResetPassword from './pages/shared/ResetPassword';
+
 function RequireMaster({ children }) {
   const { profile, loading } = useAuthStore();
 
@@ -96,6 +100,8 @@ export default function App() {
         {/* Public */}
         <Route path="/status/:token" element={<ClientStatusPage />} />
         <Route path="/monitor/:slug" element={<IAMonitor />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Master */}
         <Route path="/master/login" element={<MasterLogin />} />
